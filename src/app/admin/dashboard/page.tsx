@@ -11,6 +11,7 @@ type Intern = {
   skills: string[]
   cohort: string
   is_active: boolean
+  approval_status: string
 }
 
 export default function Dashboard() {
@@ -35,6 +36,37 @@ export default function Dashboard() {
     const json = await res.json()
     setInterns(json.data || [])
     setLoading(false)
+  }
+
+  async function handleApprove(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('intern_profiles')
+      .update({ approval_status: 'active', is_active: true })
+      .eq('id', id)
+    if (error) toast.error('Failed to approve intern')
+    else { toast.success('Intern approved!'); fetchInterns() }
+  }
+
+  async function handleReject(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('intern_profiles')
+      .update({ approval_status: 'rejected', is_active: false })
+      .eq('id', id)
+    if (error) toast.error('Failed to reject intern')
+    else { toast.success('Intern rejected'); fetchInterns() }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to deactivate this intern?')) return
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('intern_profiles')
+      .update({ is_active: false })
+      .eq('id', id)
+    if (error) toast.error('Failed to deactivate intern')
+    else { toast.success('Intern deactivated'); fetchInterns() }
   }
 
   async function handleAddIntern(e: React.FormEvent) {
@@ -67,18 +99,6 @@ export default function Dashboard() {
     setSubmitting(false)
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to deactivate this intern?')) return
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('intern_profiles')
-      .update({ is_active: false })
-      .eq('id', id)
-
-    if (error) toast.error('Failed to deactivate intern')
-    else { toast.success('Intern deactivated'); fetchInterns() }
-  }
-
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -102,9 +122,11 @@ export default function Dashboard() {
           </button>
         </div>
       </nav>
+      <button onClick={() => router.push('/admin/logs')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+  View Logs
+</button>
 
       <section className="max-w-6xl mx-auto px-6 py-12">
-
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
@@ -119,7 +141,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Interns Table */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Manage Interns</h2>
           <button
@@ -130,7 +152,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Add Intern Form */}
+        {/* Add Form */}
         {showForm && (
           <form onSubmit={handleAddIntern} className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -155,5 +177,75 @@ export default function Dashboard() {
               />
             </div>
             <div>
-              
+              <label className="text-sm text-gray-400 mb-1 block">Bio</label>
+              <input placeholder="Short description"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
+              />
             </div>
+            <div className="md:col-span-2">
+              <button type="submit" disabled={submitting}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                {submitting ? 'Saving...' : 'Save Intern'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Interns List */}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4 animate-pulse h-16" />
+            ))}
+          </div>
+        ) : interns.length === 0 ? (
+          <div className="text-center py-16 text-gray-500">
+            No interns yet. Click &quot;+ Add Intern&quot; to get started.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {interns.map(intern => (
+              <div key={intern.id} className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-4 flex items-center justify-between hover:border-gray-600 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold">
+                    {intern.full_name[0]}
+                  </div>
+                  <div>
+                    <p className="font-medium">{intern.full_name}</p>
+                    <p className="text-sm text-gray-400">{intern.cohort}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full border ${
+                    intern.approval_status === 'active' ? 'text-green-400 border-green-800' :
+                    intern.approval_status === 'rejected' ? 'text-red-400 border-red-800' :
+                    'text-yellow-400 border-yellow-800'
+                  }`}>
+                    {intern.approval_status || 'pending'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {(intern.skills || []).slice(0, 2).map(s => (
+                    <span key={s} className="bg-gray-800 text-blue-400 text-xs px-2 py-1 rounded-full">{s}</span>
+                  ))}
+                  <button onClick={() => handleApprove(intern.id)}
+                    className="text-green-400 hover:text-green-300 text-xs border border-green-800 px-2 py-1 rounded transition-colors ml-2">
+                    Approve
+                  </button>
+                  <button onClick={() => handleReject(intern.id)}
+                    className="text-yellow-400 hover:text-yellow-300 text-xs border border-yellow-800 px-2 py-1 rounded transition-colors">
+                    Reject
+                  </button>
+                  <button onClick={() => handleDelete(intern.id)}
+                    className="text-red-400 hover:text-red-300 text-xs border border-red-800 px-2 py-1 rounded transition-colors">
+                    Deactivate
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  )
+}
