@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { contactSchema } from '@/lib/validations'
+import { rateLimit, getIP } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
+  const ip = getIP(request)
+  if (!rateLimit(ip, 10, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const body = await request.json()
     const result = contactSchema.safeParse(body)
