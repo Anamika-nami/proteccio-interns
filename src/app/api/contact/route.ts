@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { contactSchema } from '@/lib/validations'
 import { rateLimit, getIP } from '@/lib/rate-limit'
+import { logActivity } from '@/lib/logger'
 
 export async function POST(request: Request) {
   const ip = getIP(request)
@@ -21,11 +22,14 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient()
-    const { error } = await supabase
-      .from('contact_messages')
-      .insert([result.data])
-
+    const { error } = await supabase.from('contact_messages').insert([result.data])
     if (error) throw error
+
+    await logActivity({
+      action: 'Contact message received',
+      entityType: 'contact_message',
+      metadata: { sender_email: result.data.email, subject: result.data.subject }
+    })
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch {
@@ -40,7 +44,6 @@ export async function GET() {
       .from('contact_messages')
       .select('*')
       .order('created_at', { ascending: false })
-
     if (error) throw error
     return NextResponse.json(data)
   } catch {

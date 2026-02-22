@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { internSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/logger'
 
 export async function GET(request: Request) {
   try {
@@ -24,14 +25,10 @@ export async function GET(request: Request) {
     }
 
     const { data, error, count } = await query.order('created_at', { ascending: false })
-
     if (error) throw error
 
     return NextResponse.json({
-      data,
-      total: count || 0,
-      page,
-      limit,
+      data, total: count || 0, page, limit,
       totalPages: Math.ceil((count || 0) / limit)
     })
   } catch {
@@ -58,6 +55,15 @@ export async function POST(request: Request) {
       .select()
 
     if (error) throw error
+
+    await logActivity({
+      userId: result.data.user_id,
+      action: 'Intern profile created',
+      entityType: 'intern_profile',
+      entityId: data[0].id,
+      metadata: { intern_name: result.data.full_name, cohort: result.data.cohort }
+    })
+
     return NextResponse.json(data[0], { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
