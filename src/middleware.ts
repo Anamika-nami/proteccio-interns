@@ -22,16 +22,15 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Block unauthenticated access to all /admin routes except login
   if (
-    request.nextUrl.pathname.startsWith('/admin') &&
+    (request.nextUrl.pathname.startsWith('/admin') &&
     !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !user
+    !user) ||
+    (request.nextUrl.pathname.startsWith('/intern') && !user)
   ) {
     return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
-  // If logged in user tries to access login page, redirect to dashboard
   if (request.nextUrl.pathname.startsWith('/admin/login') && user) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
@@ -40,5 +39,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/intern/:path*'],
 }
