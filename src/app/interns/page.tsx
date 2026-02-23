@@ -1,5 +1,4 @@
 'use client'
-import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 
 type Intern = {
@@ -39,18 +38,6 @@ export default function Interns() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
-        <h1 className="text-xl font-bold text-blue-400">Proteccio Interns</h1>
-        <div className="flex gap-6 text-sm text-gray-300">
-          <Link href="/" className="hover:text-white">Home</Link>
-          <Link href="/about" className="hover:text-white">About</Link>
-          <Link href="/interns" className="text-white">Interns</Link>
-          <Link href="/projects" className="hover:text-white">Projects</Link>
-          <Link href="/contact" className="hover:text-white">Contact</Link>
-          <Link href="/admin/login" className="text-blue-400">Admin</Link>
-        </div>
-      </nav>
-
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -117,19 +104,13 @@ export default function Interns() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-4 mt-12">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-40 hover:bg-gray-700"
-            >
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-40 hover:bg-gray-700">
               Previous
             </button>
             <span className="text-gray-400">Page {page} of {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-40 hover:bg-gray-700"
-            >
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-40 hover:bg-gray-700">
               Next
             </button>
           </div>
