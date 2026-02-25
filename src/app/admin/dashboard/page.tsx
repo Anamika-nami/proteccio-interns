@@ -74,7 +74,6 @@ export default function Dashboard() {
     setSubmitting(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-
     const res = await fetch('/api/interns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -86,7 +85,6 @@ export default function Dashboard() {
         user_id: user?.id,
       }),
     })
-
     if (res.ok) {
       toast.success('Intern added successfully!')
       setForm({ full_name: '', bio: '', cohort: '', skills: '' })
@@ -116,18 +114,20 @@ export default function Dashboard() {
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
         <h1 className="text-xl font-bold text-blue-400">Admin Dashboard</h1>
         <div className="flex items-center gap-6">
+          <button onClick={() => router.push('/admin/settings')} className="text-sm text-gray-400 hover:text-white transition-colors">
+            Settings
+          </button>
+          <button onClick={() => router.push('/admin/logs')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+            View Logs
+          </button>
           <span className="text-sm text-gray-400">{user.email}</span>
           <button onClick={handleLogout} className="text-sm text-red-400 hover:text-red-300 transition-colors">
             Logout
           </button>
         </div>
       </nav>
-      <button onClick={() => router.push('/admin/logs')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-  View Logs
-</button>
 
       <section className="max-w-6xl mx-auto px-6 py-12">
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
             { label: 'Total Interns', value: interns.length },
@@ -141,18 +141,14 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Manage Interns</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
+          <button onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
             {showForm ? 'Cancel' : '+ Add Intern'}
           </button>
         </div>
 
-        {/* Add Form */}
         {showForm && (
           <form onSubmit={handleAddIntern} className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -185,15 +181,13 @@ export default function Dashboard() {
             </div>
             <div className="md:col-span-2">
               <button type="submit" disabled={submitting}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors"
-              >
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors">
                 {submitting ? 'Saving...' : 'Save Intern'}
               </button>
             </div>
           </form>
         )}
 
-        {/* Interns List */}
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
