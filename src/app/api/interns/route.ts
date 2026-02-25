@@ -2,9 +2,20 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { internSchema } from '@/lib/validations'
 import { logActivity } from '@/lib/logger'
+import { checkFeature, getUserRole } from '@/lib/permissions'
+
+// Public fields only — sensitive fields stripped for non-admin
+const PUBLIC_FIELDS = 'id, full_name, cohort, skills, bio'
+const ADMIN_FIELDS = '*'
 
 export async function GET(request: Request) {
   try {
+    // Check feature toggle
+    const enabled = await checkFeature('feature_interns')
+    if (!enabled) {
+      return NextResponse.json({ error: 'Interns module is currently disabled' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || 'active'
@@ -14,9 +25,15 @@ export async function GET(request: Request) {
     const to = from + limit - 1
 
     const supabase = await createClient()
+
+    // Check if requester is admin — admins get full fields
+    const { data: { user } } = await supabase.auth.getUser()
+    const role = user ? await getUserRole(user.id) : 'public'
+    const fields = role === 'admin' ? ADMIN_FIELDS : PUBLIC_FIELDS
+
     let query = supabase
       .from('intern_profiles')
-      .select('*', { count: 'exact' })
+      .select(fields + ', count:id', { count: 'exact' })
       .eq('is_active', status === 'active')
       .range(from, to)
 
@@ -38,6 +55,16 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // Check feature toggle
+    const enabled = await checkFeature('feature_interns')
+    if (!enabled) {
+      return NextResponse.json({ error: 'Interns module is currently disabled' }, { status: 403 })
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await request.json()
     const result = internSchema.safeParse(body)
 
@@ -48,7 +75,6 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
     const { data, error } = await supabase
       .from('intern_profiles')
       .insert([result.data])
@@ -57,7 +83,7 @@ export async function POST(request: Request) {
     if (error) throw error
 
     await logActivity({
-      userId: result.data.user_id,
+      userId: user.id,
       action: 'Intern profile created',
       entityType: 'intern_profile',
       entityId: data[0].id,
