@@ -77,6 +77,23 @@ export default function InternPortal() {
       .eq('assigned_to', internProfile.id)
       .order('created_at', { ascending: false })
     setTasks((taskData || []) as Task[])
+
+    // Check for overdue tasks and notify
+    const overdue = (taskData || []).filter((t: any) => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done')
+    if (overdue.length > 0) {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAllRead: false })
+      })
+      // Create overdue notification via API
+      await fetch('/api/notifications/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'task_overdue', message: `You have ${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}.`, link: '/intern' })
+      })
+    }
+
     setLoading(false)
   }
 
