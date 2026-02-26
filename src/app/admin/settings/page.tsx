@@ -66,11 +66,13 @@ export default function SettingsPage() {
           <button onClick={() => router.push('/admin/dashboard')} className="text-gray-400 hover:text-white text-sm">← Dashboard</button>
           <h1 className="text-xl font-bold text-blue-400">App Settings</h1>
         </div>
+        <button onClick={() => router.push('/admin/permissions')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+          Permission Matrix →
+        </button>
       </nav>
 
       <section className="max-w-4xl mx-auto px-6 py-12 space-y-10">
 
-        {/* General Settings */}
         <div>
           <h2 className="text-2xl font-bold mb-6">General Settings</h2>
           <div className="space-y-4">
@@ -114,7 +116,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Feature Toggles */}
         <div>
           <h2 className="text-2xl font-bold mb-2">Feature Toggles</h2>
           <p className="text-gray-400 text-sm mb-6">Enable or disable modules across the entire application.</p>
@@ -123,7 +124,7 @@ export default function SettingsPage() {
               <div key={config.key} className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-4 flex items-center justify-between">
                 <div>
                   <p className="font-medium">{config.label}</p>
-                  <p className="text-sm text-gray-400">{config.key}</p>
+                  <p className="text-sm text-gray-500">{config.key}</p>
                 </div>
                 <button
                   onClick={async () => {
