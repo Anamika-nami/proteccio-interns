@@ -66,13 +66,20 @@ export default function SettingsPage() {
           <button onClick={() => router.push('/admin/dashboard')} className="text-gray-400 hover:text-white text-sm">← Dashboard</button>
           <h1 className="text-xl font-bold text-blue-400">App Settings</h1>
         </div>
-        <button onClick={() => router.push('/admin/permissions')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-          Permission Matrix →
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push('/admin/form-builder')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+            Form Builder →
+          </button>
+          <button onClick={() => router.push('/admin/deleted')} className="text-sm text-red-400 hover:text-red-300 transition-colors">
+            Deleted Records →
+          </button>
+          <button onClick={() => router.push('/admin/permissions')} className="text-sm text-gray-400 hover:text-white transition-colors">
+            Permissions →
+          </button>
+        </div>
       </nav>
 
       <section className="max-w-4xl mx-auto px-6 py-12 space-y-10">
-
         <div>
           <h2 className="text-2xl font-bold mb-6">General Settings</h2>
           <div className="space-y-4">
@@ -82,32 +89,26 @@ export default function SettingsPage() {
                 <div className="flex gap-3 items-center">
                   {config.type === 'color' ? (
                     <div className="flex items-center gap-3 flex-1">
-                      <input
-                        type="color"
+                      <input type="color"
                         value={localValues[config.key] || '#2563EB'}
                         onChange={e => setLocalValues(prev => ({ ...prev, [config.key]: e.target.value }))}
                         className="w-12 h-10 rounded cursor-pointer bg-transparent border-0"
                       />
-                      <input
-                        type="text"
+                      <input type="text"
                         value={localValues[config.key] || ''}
                         onChange={e => setLocalValues(prev => ({ ...prev, [config.key]: e.target.value }))}
                         className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   ) : (
-                    <input
-                      type="text"
+                    <input type="text"
                       value={localValues[config.key] || ''}
                       onChange={e => setLocalValues(prev => ({ ...prev, [config.key]: e.target.value }))}
                       className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                     />
                   )}
-                  <button
-                    onClick={() => handleSave(config.key)}
-                    disabled={saving === config.key}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
+                  <button onClick={() => handleSave(config.key)} disabled={saving === config.key}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     {saving === config.key ? 'Saving...' : 'Save'}
                   </button>
                 </div>
@@ -146,7 +147,6 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-
       </section>
     </main>
   )
