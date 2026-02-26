@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { logActivity } from '@/lib/logger'
 import { runWorkflow } from '@/modules/workflow/workflowEngine'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -15,11 +15,10 @@ export async function PATCH(
     const body = await request.json()
     const { action } = body
 
-    // Fetch current record to run workflow checks
     const { data: record } = await supabase
       .from('intern_profiles')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -28,9 +27,17 @@ export async function PATCH(
       const { error } = await supabase
         .from('intern_profiles')
         .update({ deleted_at: new Date().toISOString(), deleted_by: user.id, is_active: false })
-        .eq('id', params.id)
+        .eq('id', id)
       if (error) throw error
-      await logActivity({ userId: user.id, action: 'Intern soft deleted', entityType: 'intern_profile', entityId: params.id, metadata: {} })
+
+      try {
+        const supabaseLog = await createClient()
+        await supabaseLog.from('activity_logs').insert([{
+          user_id: user.id, action: 'Intern soft deleted',
+          entity_type: 'intern_profile', entity_id: id, metadata: {}
+        }])
+      } catch {}
+
       return NextResponse.json({ success: true })
     }
 
@@ -38,9 +45,17 @@ export async function PATCH(
       const { error } = await supabase
         .from('intern_profiles')
         .update({ deleted_at: null, deleted_by: null, is_active: true })
-        .eq('id', params.id)
+        .eq('id', id)
       if (error) throw error
-      await logActivity({ userId: user.id, action: 'Intern restored', entityType: 'intern_profile', entityId: params.id, metadata: {} })
+
+      try {
+        const supabaseLog = await createClient()
+        await supabaseLog.from('activity_logs').insert([{
+          user_id: user.id, action: 'Intern restored',
+          entity_type: 'intern_profile', entity_id: id, metadata: {}
+        }])
+      } catch {}
+
       return NextResponse.json({ success: true })
     }
 
@@ -51,8 +66,8 @@ export async function PATCH(
       return NextResponse.json({ error: workflow.message }, { status: 403 })
     }
 
-    const { id: _id, action: _action, ...updates } = body
-    const { error } = await supabase.from('intern_profiles').update(updates).eq('id', params.id)
+    const { action: _a, ...updates } = body
+    const { error } = await supabase.from('intern_profiles').update(updates).eq('id', id)
     if (error) throw error
 
     return NextResponse.json({ success: true })

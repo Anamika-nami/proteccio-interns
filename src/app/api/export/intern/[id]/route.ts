@@ -1,29 +1,28 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
 import { getUserRole } from '@/lib/permissions'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return new Response('Unauthorized', { status: 401 })
 
     const role = await getUserRole(user.id)
     const { searchParams } = new URL(request.url)
     const format = searchParams.get('format') || 'json'
 
-    // Intern can only export own profile
     if (role !== 'admin') {
       const { data: ownProfile } = await supabase
         .from('intern_profiles')
         .select('id')
         .eq('user_id', user.id)
         .single()
-      if (!ownProfile || ownProfile.id !== params.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      if (!ownProfile || ownProfile.id !== id) {
+        return new Response('Forbidden', { status: 403 })
       }
     }
 
@@ -34,20 +33,20 @@ export async function GET(
     const { data, error } = await supabase
       .from('intern_profiles')
       .select(fields)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
-    if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (error || !data) return new Response('Not found', { status: 404 })
 
     if (format === 'csv') {
       const headers = Object.keys(data).join(',')
       const values = Object.values(data).map(v =>
-        Array.isArray(v) ? `"${v.join(';')}"` : `"${v ?? ''}"`
+        Array.isArray(v) ? `"${(v as string[]).join(';')}"` : `"${v ?? ''}"`
       ).join(',')
       return new Response(`${headers}\n${values}`, {
         headers: {
           'Content-Type': 'text/csv',
-          'Content-Disposition': `attachment; filename="intern_${params.id}.csv"`
+          'Content-Disposition': `attachment; filename="intern_${id}.csv"`
         }
       })
     }
@@ -55,10 +54,10 @@ export async function GET(
     return new Response(JSON.stringify(data, null, 2), {
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="intern_${params.id}.json"`
+        'Content-Disposition': `attachment; filename="intern_${id}.json"`
       }
     })
   } catch {
-    return NextResponse.json({ error: 'Export failed' }, { status: 500 })
+    return new Response('Export failed', { status: 500 })
   }
 }
