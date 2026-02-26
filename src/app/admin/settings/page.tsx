@@ -4,12 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-type ConfigItem = {
-  key: string
-  value: string
-  type: string
-  label: string
-}
+type ConfigItem = { key: string; value: string; type: string; label: string }
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -59,6 +54,15 @@ export default function SettingsPage() {
   const featureKeys = configs.filter(c => c.type === 'boolean')
   const otherKeys = configs.filter(c => c.type !== 'boolean')
 
+  const adminPages = [
+    { label: '⚙️ Workflow Rules', path: '/admin/workflow' },
+    { label: '🔒 Privacy Dashboard', path: '/admin/privacy' },
+    { label: '🏗️ Form Builder', path: '/admin/form-builder' },
+    { label: '🗑️ Deleted Records', path: '/admin/deleted' },
+    { label: '📋 Consent Logs', path: '/admin/consent-logs' },
+    { label: '🛡️ Permissions', path: '/admin/permissions' },
+  ]
+
   return (
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
@@ -66,20 +70,24 @@ export default function SettingsPage() {
           <button onClick={() => router.push('/admin/dashboard')} className="text-gray-400 hover:text-white text-sm">← Dashboard</button>
           <h1 className="text-xl font-bold text-blue-400">App Settings</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin/form-builder')} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-            Form Builder →
-          </button>
-          <button onClick={() => router.push('/admin/deleted')} className="text-sm text-red-400 hover:text-red-300 transition-colors">
-            Deleted Records →
-          </button>
-          <button onClick={() => router.push('/admin/permissions')} className="text-sm text-gray-400 hover:text-white transition-colors">
-            Permissions →
-          </button>
-        </div>
       </nav>
 
       <section className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+
+        {/* Quick links */}
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Admin Tools</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {adminPages.map(p => (
+              <button key={p.path} onClick={() => router.push(p.path)}
+                className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-left text-sm font-medium hover:border-blue-600 hover:text-blue-400 transition-colors">
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* General settings */}
         <div>
           <h2 className="text-2xl font-bold mb-6">General Settings</h2>
           <div className="space-y-4">
@@ -117,6 +125,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Feature toggles */}
         <div>
           <h2 className="text-2xl font-bold mb-2">Feature Toggles</h2>
           <p className="text-gray-400 text-sm mb-6">Enable or disable modules across the entire application.</p>
@@ -147,6 +156,7 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+
       </section>
     </main>
   )

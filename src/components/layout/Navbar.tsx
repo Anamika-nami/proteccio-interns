@@ -1,42 +1,50 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-
-const links = [
-  { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
-  { href: '/interns', label: 'Interns' },
-  { href: '/projects', label: 'Projects' },
-  { href: '/contact', label: 'Contact' },
-]
+import { createClient } from '@/lib/supabase/client'
+import { useConfig } from '@/context/ConfigContext'
+import NotificationBell from '@/components/ui/NotificationBell'
 
 export default function Navbar() {
-  const pathname = usePathname()
+  const config = useConfig()
+  const [user, setUser] = useState<any>(null)
+  const [role, setRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        setUser(data.user)
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+        setRole(profile?.role || null)
+      }
+    })
+  }, [])
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">P</div>
-          <span className="text-lg font-bold text-white">Proteccio <span className="text-blue-400">Interns</span></span>
-        </Link>
-        <div className="flex items-center gap-6 text-sm">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`transition-colors hover:text-white ${pathname === link.href ? 'text-white border-b-2 border-blue-400 pb-0.5' : 'text-gray-400'}`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            href="/admin/login"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium"
-          >
-            Admin
-          </Link>
-        </div>
+    <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800 bg-gray-950">
+      <Link href="/" className="text-xl font-bold text-white hover:text-blue-400 transition-colors">
+        {config.app_name}
+      </Link>
+      <div className="flex items-center gap-6">
+        {config.feature_interns === 'true' && (
+          <Link href="/interns" className="text-sm text-gray-400 hover:text-white transition-colors">Interns</Link>
+        )}
+        {config.feature_projects === 'true' && (
+          <Link href="/projects" className="text-sm text-gray-400 hover:text-white transition-colors">Projects</Link>
+        )}
+        <Link href="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact</Link>
+        {user && <NotificationBell />}
+        {role === 'admin' && (
+          <Link href="/admin/dashboard" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">Dashboard</Link>
+        )}
+        {role === 'intern' && (
+          <Link href="/intern" className="text-sm text-green-400 hover:text-green-300 transition-colors">My Portal</Link>
+        )}
       </div>
     </nav>
   )
