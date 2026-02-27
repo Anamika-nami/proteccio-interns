@@ -7,7 +7,7 @@ type Condition = {
 }
 
 type Action = {
-  type: 'restrict_login' | 'disable_project_assignment' | 'lock_editing' | 'notify_incomplete'
+  type: string
   message: string
 }
 
@@ -20,13 +20,16 @@ type Rule = {
   is_active: boolean
 }
 
-export function evaluateCondition(record: Record<string, unknown>, condition: Condition): boolean {
+export function evaluateCondition(
+  record: Record<string, unknown>,
+  condition: Condition
+): boolean {
   const fieldValue = record[condition.field]
   switch (condition.operator) {
-    case 'equals': return fieldValue === condition.value
-    case 'not_equals': return fieldValue !== condition.value
-    case 'is_null': return fieldValue === null || fieldValue === undefined
-    case 'is_not_null': return fieldValue !== null && fieldValue !== undefined
+    case 'equals': return String(fieldValue) === String(condition.value)
+    case 'not_equals': return String(fieldValue) !== String(condition.value)
+    case 'is_null': return fieldValue === null || fieldValue === undefined || fieldValue === ''
+    case 'is_not_null': return fieldValue !== null && fieldValue !== undefined && fieldValue !== ''
     default: return false
   }
 }
@@ -57,7 +60,7 @@ export async function runWorkflow(
   for (const rule of rules) {
     if (evaluateCondition(record, rule.condition)) {
       triggeredActions.push(rule.action.type)
-      if (rule.action.type === 'restrict_login' || rule.action.type === 'lock_editing') {
+      if (['restrict_login', 'lock_editing', 'disable_project_assignment'].includes(rule.action.type)) {
         blocked = true
         blockMessage = rule.action.message
       }

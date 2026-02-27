@@ -17,13 +17,8 @@ export async function GET(
 
     if (role !== 'admin') {
       const { data: ownProfile } = await supabase
-        .from('intern_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-      if (!ownProfile || ownProfile.id !== id) {
-        return new Response('Forbidden', { status: 403 })
-      }
+        .from('intern_profiles').select('id').eq('user_id', user.id).single()
+      if (!ownProfile || ownProfile.id !== id) return new Response('Forbidden', { status: 403 })
     }
 
     const fields = role === 'admin'
@@ -31,12 +26,17 @@ export async function GET(
       : 'id, full_name, bio, skills, cohort'
 
     const { data, error } = await supabase
-      .from('intern_profiles')
-      .select(fields)
-      .eq('id', id)
-      .single()
+      .from('intern_profiles').select(fields).eq('id', id).single()
 
     if (error || !data) return new Response('Not found', { status: 404 })
+
+    try {
+      await supabase.from('activity_logs').insert([{
+        user_id: user.id, action: `Exported intern profile ${id}`,
+        entity_type: 'intern_profile', entity_id: id,
+        metadata: { format }, log_category: 'data_export'
+      }])
+    } catch {}
 
     if (format === 'csv') {
       const headers = Object.keys(data).join(',')

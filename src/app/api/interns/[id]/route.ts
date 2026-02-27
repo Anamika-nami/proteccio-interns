@@ -29,15 +29,13 @@ export async function PATCH(
         .update({ deleted_at: new Date().toISOString(), deleted_by: user.id, is_active: false })
         .eq('id', id)
       if (error) throw error
-
       try {
-        const supabaseLog = await createClient()
-        await supabaseLog.from('activity_logs').insert([{
+        await supabase.from('activity_logs').insert([{
           user_id: user.id, action: 'Intern soft deleted',
-          entity_type: 'intern_profile', entity_id: id, metadata: {}
+          entity_type: 'intern_profile', entity_id: id,
+          metadata: {}, log_category: 'action'
         }])
       } catch {}
-
       return NextResponse.json({ success: true })
     }
 
@@ -47,19 +45,16 @@ export async function PATCH(
         .update({ deleted_at: null, deleted_by: null, is_active: true })
         .eq('id', id)
       if (error) throw error
-
       try {
-        const supabaseLog = await createClient()
-        await supabaseLog.from('activity_logs').insert([{
+        await supabase.from('activity_logs').insert([{
           user_id: user.id, action: 'Intern restored',
-          entity_type: 'intern_profile', entity_id: id, metadata: {}
+          entity_type: 'intern_profile', entity_id: id,
+          metadata: {}, log_category: 'action'
         }])
       } catch {}
-
       return NextResponse.json({ success: true })
     }
 
-    // For any other update — run workflow first
     const updatedRecord = { ...record, ...body }
     const workflow = await runWorkflow('intern_profile', updatedRecord)
     if (workflow.blocked) {

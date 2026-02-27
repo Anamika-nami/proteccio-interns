@@ -15,12 +15,19 @@ export async function GET() {
       .select('id, user_id, consented_at, version')
       .order('consented_at', { ascending: false })
 
+    try {
+      await supabase.from('activity_logs').insert([{
+        user_id: user.id, action: 'Exported consent logs CSV',
+        entity_type: 'consent_logs', entity_id: 'all',
+        metadata: {}, log_category: 'data_export'
+      }])
+    } catch {}
+
     const rows = (data || []).map(r =>
       `"${r.id}","${r.user_id}","${r.consented_at}","${r.version}"`
     )
-    const csv = `id,user_id,consented_at,version\n${rows.join('\n')}`
 
-    return new Response(csv, {
+    return new Response(`id,user_id,consented_at,version\n${rows.join('\n')}`, {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': 'attachment; filename="consent_logs.csv"'

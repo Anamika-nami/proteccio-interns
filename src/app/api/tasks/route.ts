@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     if (role !== 'admin') {
       const { data: profile } = await supabase
         .from('intern_profiles').select('id').eq('user_id', user.id).single()
-      if (!profile) return NextResponse.json([], )
+      if (!profile) return NextResponse.json([])
       query = query.eq('assigned_to', profile.id)
     } else if (assignedTo) {
       query = query.eq('assigned_to', assignedTo)

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       .order('sort_order')
 
     if (error) throw error
-    return NextResponse.json(data)
+    return NextResponse.json(data || [])
   } catch {
     return NextResponse.json({ error: 'Failed to load form fields' }, { status: 500 })
   }
@@ -53,11 +53,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
     const { id, ...updates } = body
 
-    const { error } = await supabase
-      .from('form_fields')
-      .update(updates)
-      .eq('id', id)
-
+    const { error } = await supabase.from('form_fields').update(updates).eq('id', id)
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch {

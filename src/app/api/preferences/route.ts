@@ -27,14 +27,12 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    const { error } = await supabase
+    await supabase
       .from('user_preferences')
-      .upsert({ user_id: user.id, ...body, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' })
+      .upsert({ user_id: user.id, ...body, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
 
-    if (error) throw error
     return NextResponse.json({ success: true })
   } catch {
-    return NextResponse.json({ error: 'Failed to save preferences' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }

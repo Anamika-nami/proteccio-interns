@@ -9,7 +9,6 @@ export async function POST(request: Request) {
 
     const { type, message, link } = await request.json()
 
-    // Check if same notification type already exists unread — avoid duplicates
     const { data: existing } = await supabase
       .from('notifications')
       .select('id')
@@ -23,6 +22,6 @@ export async function POST(request: Request) {
     await supabase.from('notifications').insert([{ user_id: user.id, type, message, link }])
     return NextResponse.json({ success: true })
   } catch {
-    return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }

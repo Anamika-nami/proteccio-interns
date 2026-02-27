@@ -3,18 +3,16 @@ import { NextResponse } from 'next/server'
 import { internSchema } from '@/lib/validations'
 import { logActivity } from '@/lib/logger'
 import { checkFeature, getUserRole } from '@/lib/permissions'
+import { runWorkflow } from '@/modules/workflow/workflowEngine'
+import { createNotification } from '@/modules/notifications/notificationsService'
 
-// Public fields only — sensitive fields stripped for non-admin
 const PUBLIC_FIELDS = 'id, full_name, cohort, skills, bio'
-const ADMIN_FIELDS = '*'
+const ADMIN_FIELDS = 'id, full_name, cohort, skills, bio, approval_status, is_active, user_id, created_at'
 
 export async function GET(request: Request) {
   try {
-    // Check feature toggle
     const enabled = await checkFeature('feature_interns')
-    if (!enabled) {
-      return NextResponse.json({ error: 'Interns module is currently disabled' }, { status: 403 })
-    }
+    if (!enabled) return NextResponse.json({ error: 'Interns module is disabled' }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
@@ -25,27 +23,28 @@ export async function GET(request: Request) {
     const to = from + limit - 1
 
     const supabase = await createClient()
-
-    // Check if requester is admin — admins get full fields
     const { data: { user } } = await supabase.auth.getUser()
     const role = user ? await getUserRole(user.id) : 'public'
     const fields = role === 'admin' ? ADMIN_FIELDS : PUBLIC_FIELDS
 
     let query = supabase
       .from('intern_profiles')
-      .select(fields + ', count:id', { count: 'exact' })
+      .select(fields, { count: 'exact' })
       .eq('is_active', status === 'active')
+      .is('deleted_at', null)
       .range(from, to)
+      .order('created_at', { ascending: false })
 
-    if (search) {
-      query = query.or(`full_name.ilike.%${search}%,bio.ilike.%${search}%`)
-    }
+    if (search) query = query.ilike('full_name', `%${search}%`)
 
-    const { data, error, count } = await query.order('created_at', { ascending: false })
+    const { data, error, count } = await query
     if (error) throw error
 
     return NextResponse.json({
-      data, total: count || 0, page, limit,
+      data: data || [],
+      total: count || 0,
+      page,
+      limit,
       totalPages: Math.ceil((count || 0) / limit)
     })
   } catch {
@@ -55,11 +54,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // Check feature toggle
     const enabled = await checkFeature('feature_interns')
-    if (!enabled) {
-      return NextResponse.json({ error: 'Interns module is currently disabled' }, { status: 403 })
-    }
+    if (!enabled) return NextResponse.json({ error: 'Interns module is disabled' }, { status: 403 })
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -67,12 +63,8 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const result = internSchema.safeParse(body)
-
     if (!result.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', fields: result.error.flatten().fieldErrors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Validation failed', fields: result.error.flatten().fieldErrors }, { status: 400 })
     }
 
     const { data, error } = await supabase
@@ -82,12 +74,22 @@ export async function POST(request: Request) {
 
     if (error) throw error
 
+    const workflow = await runWorkflow('intern_profile', data[0])
+    if (workflow.actions.includes('notify_incomplete') && body.user_id) {
+      await createNotification({
+        userId: body.user_id,
+        type: 'profile_incomplete',
+        message: 'Your profile is incomplete. Please add a bio and skills.',
+        link: '/intern'
+      })
+    }
+
     await logActivity({
       userId: user.id,
       action: 'Intern profile created',
       entityType: 'intern_profile',
       entityId: data[0].id,
-      metadata: { intern_name: result.data.full_name, cohort: result.data.cohort }
+      metadata: { intern_name: result.data.full_name }
     })
 
     return NextResponse.json(data[0], { status: 201 })

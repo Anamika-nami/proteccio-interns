@@ -6,9 +6,12 @@ type LogParams = {
   entityType: string
   entityId: string
   metadata?: Record<string, unknown>
+  category?: 'action' | 'data_view' | 'data_export' | 'config_change'
 }
 
-export async function logActivity({ userId, action, entityType, entityId, metadata = {} }: LogParams) {
+export async function logActivity({
+  userId, action, entityType, entityId, metadata = {}, category = 'action'
+}: LogParams) {
   try {
     const supabase = await createClient()
     await supabase.from('activity_logs').insert([{
@@ -16,9 +19,10 @@ export async function logActivity({ userId, action, entityType, entityId, metada
       action,
       entity_type: entityType,
       entity_id: entityId,
-      metadata
+      metadata,
+      log_category: category
     }])
   } catch {
-    // Logging is non-critical — never throw
+    // Non-critical — never throw
   }
 }

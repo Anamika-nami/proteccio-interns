@@ -16,13 +16,20 @@ export async function GET() {
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
+    try {
+      await supabase.from('activity_logs').insert([{
+        user_id: user.id, action: 'Exported all interns CSV',
+        entity_type: 'intern_profiles', entity_id: 'all',
+        metadata: {}, log_category: 'data_export'
+      }])
+    } catch {}
+
     const headers = 'id,full_name,cohort,skills,bio,approval_status,is_active,created_at'
     const rows = (data || []).map(r =>
       `"${r.id}","${r.full_name}","${r.cohort}","${(r.skills || []).join(';')}","${r.bio || ''}","${r.approval_status}","${r.is_active}","${r.created_at}"`
     )
-    const csv = `${headers}\n${rows.join('\n')}`
 
-    return new Response(csv, {
+    return new Response(`${headers}\n${rows.join('\n')}`, {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': 'attachment; filename="all_interns.csv"'

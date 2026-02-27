@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json([], { status: 401 })
+    if (!user) return NextResponse.json([])
 
     const { data } = await supabase
       .from('notifications')
@@ -16,7 +16,7 @@ export async function GET() {
 
     return NextResponse.json(data || [])
   } catch {
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json([])
   }
 }
 
