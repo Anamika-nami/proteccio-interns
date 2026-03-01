@@ -1,43 +1,26 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const token = request.cookies.get('sb-access-token')?.value
+    || request.cookies.get('supabase-auth-token')?.value
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options))
-        },
-      },
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (
-    (request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !user) ||
-    (request.nextUrl.pathname.startsWith('/intern') && !user)
-  ) {
-    return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
-  if (request.nextUrl.pathname.startsWith('/admin/login') && user) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  if (pathname.startsWith('/intern')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/intern/:path*'],
+  matcher: ['/admin/:path*', '/intern/:path*']
 }
