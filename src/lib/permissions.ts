@@ -1,5 +1,12 @@
 ﻿import { createClient } from '@/lib/supabase/server'
 
+type PermissionData = {
+  can_create?: boolean
+  can_read?: boolean
+  can_update?: boolean
+  can_delete?: boolean
+}
+
 export async function getUserRole(userId: string): Promise<string> {
   try {
     const supabase = await createClient()
@@ -37,11 +44,11 @@ export async function checkPermission(
     const supabase = await createClient()
     const { data } = await supabase
       .from('role_permissions')
-      .select(action)
+      .select('can_create, can_read, can_update, can_delete')
       .eq('role', role)
       .eq('resource', resource)
       .single()
-    return (data as Record<typeof action, boolean> | null)?.[action] === true
+    return (data as PermissionData)?.[action] === true
   } catch {
     return true
   }
