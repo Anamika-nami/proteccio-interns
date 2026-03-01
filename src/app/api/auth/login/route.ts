@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
 
-    const userId = data.user?.id ?? 'unknown'
+    const userId: string = data.user?.id ?? 'unknown'
 
     await logActivity({
       userId,
