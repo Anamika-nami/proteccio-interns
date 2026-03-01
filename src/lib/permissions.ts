@@ -52,4 +52,4 @@ export async function checkPermission(
   } catch {
     return true
   }
-}
+}// fixed
