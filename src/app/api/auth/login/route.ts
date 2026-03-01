@@ -16,16 +16,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
 
-    if (data.user?.id) {
-      await logActivity({
-        userId: data.user.id,
-        action: 'User logged in',
-        entityType: 'auth',
-        entityId: data.user.id,
-        metadata: { email },
-        category: 'action'
-      })
-    }
+    const userId = data.user?.id ?? 'unknown'
+
+    await logActivity({
+      userId,
+      action: 'User logged in',
+      entityType: 'auth',
+      entityId: userId,
+      metadata: { email },
+      category: 'action'
+    })
 
     return NextResponse.json({ success: true, user: data.user })
   } catch {
