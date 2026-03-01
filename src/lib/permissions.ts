@@ -37,11 +37,12 @@ export async function checkPermission(
     const supabase = await createClient()
     const { data } = await supabase
       .from('role_permissions')
-      .select(action)
+      .select('can_create, can_read, can_update, can_delete')
       .eq('role', role)
       .eq('resource', resource)
       .single()
-    return data?.[action] === true
+    const row = data as Record<string, boolean>
+    return row[action] === true
   } catch {
     return true
   }
