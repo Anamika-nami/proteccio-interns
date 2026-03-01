@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ full_name: '', bio: '', cohort: '', skills: '' })
+  const [appName, setAppName] = useState('Proteccio')
 
   useEffect(() => {
     const supabase = createClient()
@@ -71,6 +72,7 @@ export default function Dashboard() {
     const cfg: Record<string, string> = {}
     ;(configData || []).forEach(c => { cfg[c.key] = c.value })
     setFeatures(cfg)
+    if (cfg['app_name']) setAppName(cfg['app_name'])
     setWidgets({
       overview: cfg['widget_overview'] !== 'false',
       interns: cfg['widget_interns'] !== 'false',
@@ -89,14 +91,14 @@ export default function Dashboard() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, value: newVal })
     })
-    if (res.ok) toast.success('Updated!')
+    if (res.ok) toast.success('Updated')
     else toast.error('Failed')
   }
 
   async function handleApprove(id: string) {
     const supabase = createClient()
     await supabase.from('intern_profiles').update({ approval_status: 'active', is_active: true }).eq('id', id)
-    toast.success('Approved!')
+    toast.success('Approved')
     setInterns(prev => prev.map(i => i.id === id ? { ...i, approval_status: 'active', is_active: true } : i))
     setMetrics(prev => ({ ...prev, pendingApprovals: Math.max(0, prev.pendingApprovals - 1), activeInterns: prev.activeInterns + 1 }))
   }
@@ -124,6 +126,8 @@ export default function Dashboard() {
 
   async function handleAddIntern(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.full_name.trim()) { toast.error('Full name is required'); return }
+    if (!form.cohort.trim()) { toast.error('Cohort is required'); return }
     setSubmitting(true)
     const res = await fetch('/api/interns', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -133,7 +137,7 @@ export default function Dashboard() {
       }),
     })
     if (res.ok) {
-      toast.success('Intern added!')
+      toast.success('Intern added')
       setForm({ full_name: '', bio: '', cohort: '', skills: '' })
       setShowForm(false)
       loadAll()
@@ -164,7 +168,10 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-6 md:px-10 py-5 border-b border-gray-800 flex-wrap gap-3">
-        <h1 className="text-xl font-bold text-blue-400">Admin Dashboard</h1>
+        <div>
+          <h1 className="text-xl font-bold text-blue-400">{appName} Admin</h1>
+          <p className="text-xs text-gray-500">Control Panel</p>
+        </div>
         <div className="flex items-center gap-3 flex-wrap">
           {[
             { label: 'Settings', path: '/admin/settings' },
@@ -172,18 +179,15 @@ export default function Dashboard() {
             { label: 'Privacy', path: '/admin/privacy' },
             { label: 'Deleted', path: '/admin/deleted' },
             { label: 'Consent', path: '/admin/consent-logs' },
+            { label: 'Logs', path: '/admin/logs' },
           ].map(({ label, path }) => (
             <button key={path} onClick={() => router.push(path)}
-              className="text-sm text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-colors">
+              className="text-sm text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 transition-colors">
               {label}
             </button>
           ))}
-          <button onClick={() => router.push('/admin/logs')}
-            className="text-sm text-blue-400 hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-colors">
-            Logs
-          </button>
           <button onClick={async () => { const s = createClient(); await s.auth.signOut(); router.push('/admin/login') }}
-            className="text-sm text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 rounded transition-colors">
+            className="text-sm text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-2 py-1 transition-colors">
             Logout
           </button>
         </div>
@@ -193,7 +197,7 @@ export default function Dashboard() {
 
         {widgets.overview && (
           <div>
-            <h2 className="text-base font-semibold text-gray-400 mb-4">System Overview</h2>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">System Overview</h2>
             {loading ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[...Array(4)].map((_, i) => <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-6 animate-pulse h-24" />)}
@@ -201,12 +205,12 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Users', value: metrics.totalUsers, color: 'text-blue-400' },
-                  { label: 'Active Interns', value: metrics.activeInterns, color: 'text-green-400' },
-                  { label: 'Total Projects', value: metrics.totalProjects, color: 'text-purple-400' },
-                  { label: 'Pending Approvals', value: metrics.pendingApprovals, color: metrics.pendingApprovals > 0 ? 'text-yellow-400' : 'text-gray-500' },
+                  { label: 'Total Users', value: metrics.totalUsers, color: 'text-blue-400', border: 'hover:border-blue-800' },
+                  { label: 'Active Interns', value: metrics.activeInterns, color: 'text-green-400', border: 'hover:border-green-800' },
+                  { label: 'Total Projects', value: metrics.totalProjects, color: 'text-purple-400', border: 'hover:border-purple-800' },
+                  { label: 'Pending Approvals', value: metrics.pendingApprovals, color: metrics.pendingApprovals > 0 ? 'text-yellow-400' : 'text-gray-500', border: 'hover:border-yellow-800' },
                 ].map(card => (
-                  <div key={card.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-colors">
+                  <div key={card.label} className={`bg-gray-900 border border-gray-800 rounded-xl p-5 transition-colors ${card.border}`}>
                     <p className="text-gray-400 text-xs mb-2">{card.label}</p>
                     <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
                   </div>
@@ -275,14 +279,14 @@ export default function Dashboard() {
             {showForm && (
               <form onSubmit={handleAddIntern} className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { label: 'Full Name *', field: 'full_name', placeholder: 'Jane Smith', required: true },
-                  { label: 'Cohort *', field: 'cohort', placeholder: '2026', required: true },
-                  { label: 'Skills (comma separated)', field: 'skills', placeholder: 'React, TypeScript', required: false },
-                  { label: 'Bio', field: 'bio', placeholder: 'Short description', required: false },
-                ].map(({ label, field, placeholder, required }) => (
+                  { label: 'Full Name *', field: 'full_name', placeholder: 'Jane Smith' },
+                  { label: 'Cohort *', field: 'cohort', placeholder: '2026' },
+                  { label: 'Skills (comma separated)', field: 'skills', placeholder: 'React, TypeScript' },
+                  { label: 'Bio', field: 'bio', placeholder: 'Short description' },
+                ].map(({ label, field, placeholder }) => (
                   <div key={field}>
                     <label className="text-sm text-gray-400 mb-1 block">{label}</label>
-                    <input required={required} placeholder={placeholder}
+                    <input placeholder={placeholder}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={form[field as keyof typeof form]}
                       onChange={e => setForm({ ...form, [field]: e.target.value })} />
@@ -290,7 +294,7 @@ export default function Dashboard() {
                 ))}
                 <div className="md:col-span-2">
                   <button type="submit" disabled={submitting}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {submitting ? 'Saving...' : 'Save Intern'}
                   </button>
                 </div>
@@ -298,13 +302,13 @@ export default function Dashboard() {
             )}
 
             {loading ? <SkeletonLoader count={4} type="row" /> :
-              interns.length === 0 ? <EmptyState icon="👥" title="No interns yet" description='Click "+ Add Intern" to get started.' /> : (
+              interns.length === 0 ? <EmptyState title="No interns yet" description='Click Add Intern to get started.' /> : (
                 <div className="space-y-2">
                   {interns.map(intern => (
                     <div key={intern.id} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-3.5 flex items-center justify-between hover:border-gray-600 transition-colors flex-wrap gap-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                          {intern.full_name[0]}
+                          {intern.full_name[0]?.toUpperCase()}
                         </div>
                         <div>
                           <p className="font-medium text-sm">{intern.full_name}</p>
@@ -331,7 +335,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-300">Recent Activity</h2>
-              <button onClick={() => router.push('/admin/logs')} className="text-sm text-blue-400 hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">View all →</button>
+              <button onClick={() => router.push('/admin/logs')} className="text-sm text-blue-400 hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">View all</button>
             </div>
             <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
               {recentLogs.map((log, i) => (
