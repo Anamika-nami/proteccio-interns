@@ -25,17 +25,12 @@ type Project = {
   repo_url: string | null
 }
 
-type Prefs = {
-  theme: string
-  layout: string
-}
-
 export default function InternPortal() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [prefs, setPrefs] = useState<Prefs>({ theme: 'dark', layout: 'grid' })
+  const [layout, setLayout] = useState('grid')
   const [loading, setLoading] = useState(true)
   const [consentGiven, setConsentGiven] = useState(true)
   const [givingConsent, setGivingConsent] = useState(false)
@@ -45,12 +40,16 @@ export default function InternPortal() {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.push('/admin/login'); return }
       setUser(data.user)
-      fetchAll(data.user.id)
+      fetchAll()
     })
   }, [])
 
-  async function fetchAll(userId: string) {
+  async function fetchAll() {
     try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
       const [consentRes, prefsRes] = await Promise.all([
         fetch('/api/consent'),
         fetch('/api/preferences')
@@ -58,26 +57,33 @@ export default function InternPortal() {
       const consentData = await consentRes.json()
       const prefsData = await prefsRes.json()
       setConsentGiven(consentData.consented === true)
-      setPrefs(prefsData)
+      if (prefsData?.layout) setLayout(prefsData.layout)
 
-      const supabase = createClient()
       const { data: profileData } = await supabase
-        .from('intern_profiles').select('id').eq('user_id', userId).single()
+        .from('intern_profiles').select('id').eq('user_id', user.id).single()
 
       if (profileData) {
         const [{ data: taskData }, { data: projectData }] = await Promise.all([
-          supabase.from('tasks').select('*').eq('assigned_to', profileData.id).order('created_at', { ascending: false }),
-          supabase.from('projects').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(6)
+          supabase.from('tasks').select('id, title, description, status, assigned_to, due_date, created_by, created_at').eq('assigned_to', profileData.id).order('created_at', { ascending: false }),
+          supabase.from('projects').select('id, title, description, tech_stack, status, live_url, repo_url').is('deleted_at', null).order('created_at', { ascending: false }).limit(6)
         ])
-        const fetchedTasks = (taskData || []) as Task[]
+
+        const fetchedTasks: Task[] = (taskData || []).map((t: any) => ({
+          id: t.id, title: t.title, description: t.description ?? null,
+          status: t.status, assigned_to: t.assigned_to ?? null,
+          due_date: t.due_date ?? null, created_by: t.created_by ?? null, created_at: t.created_at
+        }))
         setTasks(fetchedTasks)
-        setProjects((projectData || []) as Project[])
+        setProjects((projectData || []).map((p: any) => ({
+          id: p.id, title: p.title, description: p.description ?? null,
+          tech_stack: p.tech_stack || [], status: p.status,
+          live_url: p.live_url ?? null, repo_url: p.repo_url ?? null
+        })))
 
         const overdue = fetchedTasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done')
         if (overdue.length > 0) {
           fetch('/api/notifications/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'task_overdue', message: `You have ${overdue.length} overdue task(s).`, link: '/intern' })
           }).catch(() => {})
         }
@@ -94,25 +100,22 @@ export default function InternPortal() {
     setGivingConsent(false)
   }
 
-  async function updatePrefs(key: string, value: string) {
-    const updated = { ...prefs, [key]: value }
-    setPrefs(updated)
+  async function updateLayout(val: string) {
+    setLayout(val)
     fetch('/api/preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [key]: value })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layout: val })
     }).catch(() => {})
   }
 
   async function updateTaskStatus(id: string, status: string) {
     const res = await fetch('/api/tasks', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status })
     })
     if (res.ok) {
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t))
-      toast.success('Status updated')
+      toast.success('Updated!')
     }
   }
 
@@ -126,11 +129,11 @@ export default function InternPortal() {
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6">
       <div className="max-w-md bg-gray-900 border border-blue-800 rounded-2xl p-8 text-center">
         <div className="text-5xl mb-4">���</div>
-        <h2 className="text-2xl font-bold mb-3">Data Consent Required</h2>
-        <p className="text-gray-400 mb-6 text-sm">Before accessing your portal, you must agree to our data processing policy. Your data is stored securely and never shared without your consent.</p>
+        <h2 className="text-2xl font-bold mb-3">Consent Required</h2>
+        <p className="text-gray-400 mb-6 text-sm">Before accessing your portal, you must agree to our data processing policy.</p>
         <button onClick={handleConsent} disabled={givingConsent}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 py-3 rounded-xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
-          {givingConsent ? 'Recording...' : 'I Agree — Continue to Portal'}
+          {givingConsent ? 'Recording...' : 'I Agree — Continue'}
         </button>
       </div>
     </div>
@@ -142,6 +145,8 @@ export default function InternPortal() {
     done: 'bg-green-900 text-green-300'
   }
 
+  const gridClass = layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'
+
   return (
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-6 md:px-10 py-5 border-b border-gray-800 flex-wrap gap-3">
@@ -150,13 +155,12 @@ export default function InternPortal() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">Layout:</span>
             {['grid', 'list'].map(l => (
-              <button key={l} onClick={() => updatePrefs('layout', l)}
-                className={`text-xs px-2 py-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${prefs.layout === l ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
+              <button key={l} onClick={() => updateLayout(l)}
+                className={`text-xs px-2 py-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${layout === l ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
                 {l}
               </button>
             ))}
           </div>
-          <span className="text-sm text-gray-500 hidden md:inline">{user?.email}</span>
           <button onClick={async () => { const s = createClient(); await s.auth.signOut(); router.push('/admin/login') }}
             className="text-sm text-red-400 hover:text-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded">
             Logout
@@ -165,7 +169,6 @@ export default function InternPortal() {
       </nav>
 
       <section className="max-w-6xl mx-auto px-6 py-10 space-y-10">
-
         <div>
           <h2 className="text-lg font-semibold text-gray-300 mb-4">My Tasks</h2>
           {tasks.length === 0 ? (
@@ -174,14 +177,12 @@ export default function InternPortal() {
               <p className="text-gray-500">No tasks assigned yet.</p>
             </div>
           ) : (
-            <div className={prefs.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
+            <div className={gridClass}>
               {tasks.map(task => (
                 <div key={task.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-colors">
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <p className="font-medium text-sm">{task.title}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusColors[task.status] || statusColors.todo}`}>
-                      {task.status}
-                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusColors[task.status] || statusColors.todo}`}>{task.status}</span>
                   </div>
                   {task.description && <p className="text-xs text-gray-400 mb-3">{task.description}</p>}
                   {task.due_date && (
@@ -190,16 +191,16 @@ export default function InternPortal() {
                     </p>
                   )}
                   {task.status !== 'done' && (
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2">
                       {task.status === 'todo' && (
                         <button onClick={() => updateTaskStatus(task.id, 'in_progress')}
-                          className="text-xs text-blue-400 border border-blue-800 px-2 py-1 rounded transition-colors hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          className="text-xs text-blue-400 border border-blue-800 px-2 py-1 rounded hover:border-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
                           Start
                         </button>
                       )}
                       <button onClick={() => updateTaskStatus(task.id, 'done')}
-                        className="text-xs text-green-400 border border-green-800 px-2 py-1 rounded transition-colors hover:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        Mark Done
+                        className="text-xs text-green-400 border border-green-800 px-2 py-1 rounded hover:border-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Done
                       </button>
                     </div>
                   )}
@@ -217,7 +218,7 @@ export default function InternPortal() {
               <p className="text-gray-500">No projects yet.</p>
             </div>
           ) : (
-            <div className={prefs.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
+            <div className={gridClass}>
               {projects.map(project => (
                 <div key={project.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-blue-600 transition-colors">
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -226,20 +227,19 @@ export default function InternPortal() {
                   </div>
                   {project.description && <p className="text-sm text-gray-400 mb-3">{project.description}</p>}
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {(project.tech_stack || []).map(t => (
+                    {project.tech_stack.map(t => (
                       <span key={t} className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full">{t}</span>
                     ))}
                   </div>
                   <div className="flex gap-3">
-                    {project.live_url && <a href={project.live_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline focus:outline-none focus:ring-1 focus:ring-blue-500 rounded">Live ↗</a>}
-                    {project.repo_url && <a href={project.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline focus:outline-none focus:ring-1 focus:ring-gray-500 rounded">Repo ↗</a>}
+                    {project.live_url && <a href={project.live_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">Live ↗</a>}
+                    {project.repo_url && <a href={project.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline">Repo ↗</a>}
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-
       </section>
     </main>
   )
