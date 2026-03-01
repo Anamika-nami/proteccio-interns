@@ -1,5 +1,4 @@
 ﻿import { createClient } from '@/lib/supabase/server'
-
 export async function getUserRole(userId: string): Promise<string> {
   try {
     const supabase = await createClient()
@@ -42,7 +41,7 @@ export async function checkPermission(
       .eq('resource', resource)
       .single()
     if (!data) return true
-    return (data as any)[action] === true
+    return (data as any) [action] === true
   } catch {
     return true
   }
