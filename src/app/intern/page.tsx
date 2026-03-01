@@ -128,12 +128,11 @@ export default function InternPortal() {
   if (!consentGiven) return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6">
       <div className="max-w-md bg-gray-900 border border-blue-800 rounded-2xl p-8 text-center">
-        <div className="text-5xl mb-4">Ì¥í</div>
         <h2 className="text-2xl font-bold mb-3">Consent Required</h2>
-        <p className="text-gray-400 mb-6 text-sm">Before accessing your portal, you must agree to our data processing policy.</p>
+        <p className="text-gray-400 mb-6 text-sm">Before accessing your portal, you must agree to our data processing policy. Your data is stored securely and never shared without your consent.</p>
         <button onClick={handleConsent} disabled={givingConsent}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 py-3 rounded-xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
-          {givingConsent ? 'Recording...' : 'I Agree ‚Äî Continue'}
+          {givingConsent ? 'Recording...' : 'I Agree - Continue to Portal'}
         </button>
       </div>
     </div>
@@ -173,7 +172,6 @@ export default function InternPortal() {
           <h2 className="text-lg font-semibold text-gray-300 mb-4">My Tasks</h2>
           {tasks.length === 0 ? (
             <div className="text-center py-12 border border-gray-800 rounded-xl">
-              <div className="text-4xl mb-3">‚úÖ</div>
               <p className="text-gray-500">No tasks assigned yet.</p>
             </div>
           ) : (
@@ -214,7 +212,6 @@ export default function InternPortal() {
           <h2 className="text-lg font-semibold text-gray-300 mb-4">Projects</h2>
           {projects.length === 0 ? (
             <div className="text-center py-12 border border-gray-800 rounded-xl">
-              <div className="text-4xl mb-3">Ì≥Å</div>
               <p className="text-gray-500">No projects yet.</p>
             </div>
           ) : (
@@ -232,8 +229,8 @@ export default function InternPortal() {
                     ))}
                   </div>
                   <div className="flex gap-3">
-                    {project.live_url && <a href={project.live_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">Live ‚Üó</a>}
-                    {project.repo_url && <a href={project.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline">Repo ‚Üó</a>}
+                    {project.live_url && <a href={project.live_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">Live</a>}
+                    {project.repo_url && <a href={project.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline">Repo</a>}
                   </div>
                 </div>
               ))}
