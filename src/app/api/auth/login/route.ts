@@ -1,22 +1,34 @@
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { logActivity } from '@/lib/logger'
-import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json()
+    const { email, password } = await request.json()
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    }
+
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    await logActivity({
-      userId: user?.id,
-      action: 'User logged in',
-      entityType: 'auth',
-      metadata: { email }
-    })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
 
-    return NextResponse.json({ success: true })
+    if (data.user?.id) {
+      await logActivity({
+        userId: data.user.id,
+        action: 'User logged in',
+        entityType: 'auth',
+        entityId: data.user.id,
+        metadata: { email },
+        category: 'action'
+      })
+    }
+
+    return NextResponse.json({ success: true, user: data.user })
   } catch {
-    return NextResponse.json({ success: false })
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
