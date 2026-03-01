@@ -9,11 +9,12 @@ type DeletedIntern = {
   full_name: string
   cohort: string
   deleted_at: string
+  deleted_by: string | null
 }
 
-export default function DeletedRecords() {
+export default function DeletedPage() {
   const router = useRouter()
-  const [records, setRecords] = useState<DeletedIntern[]>([])
+  const [interns, setInterns] = useState<DeletedIntern[]>([])
   const [loading, setLoading] = useState(true)
   const [restoring, setRestoring] = useState<string | null>(null)
 
@@ -29,10 +30,10 @@ export default function DeletedRecords() {
     const supabase = createClient()
     const { data } = await supabase
       .from('intern_profiles')
-      .select('id, full_name, cohort, deleted_at')
+      .select('id, full_name, cohort, deleted_at, deleted_by')
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false })
-    setRecords(data || [])
+    setInterns(data || [])
     setLoading(false)
   }
 
@@ -44,22 +45,10 @@ export default function DeletedRecords() {
       body: JSON.stringify({ action: 'restore' })
     })
     if (res.ok) {
-      toast.success('Intern restored successfully!')
-      setRecords(prev => prev.filter(r => r.id !== id))
-    } else {
-      toast.error('Failed to restore intern')
-    }
+      toast.success('Intern restored!')
+      setInterns(prev => prev.filter(i => i.id !== id))
+    } else toast.error('Failed to restore')
     setRestoring(null)
-  }
-
-  function daysAgo(dateStr: string) {
-    const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
-    return days === 0 ? 'Today' : `${days} day${days > 1 ? 's' : ''} ago`
-  }
-
-  function daysUntilPermanent(dateStr: string) {
-    const days = 90 - Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
-    return days
   }
 
   if (loading) return (
@@ -72,55 +61,34 @@ export default function DeletedRecords() {
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin/dashboard')} className="text-gray-400 hover:text-white text-sm">← Dashboard</button>
-          <h1 className="text-xl font-bold text-red-400">Deleted Records</h1>
+          <button onClick={() => router.push('/admin/dashboard')} className="text-gray-400 hover:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">← Dashboard</button>
+          <h1 className="text-xl font-bold text-blue-400">Deleted Records</h1>
         </div>
-        <span className="text-sm text-gray-500">Records auto-purge after 90 days</span>
+        <span className="text-sm text-gray-500">{interns.length} records</span>
       </nav>
 
-      <section className="max-w-4xl mx-auto px-6 py-12">
-        {records.length === 0 ? (
-          <div className="text-center py-24 border border-gray-800 rounded-xl">
-            <div className="text-5xl mb-4">🗑️</div>
-            <h3 className="text-xl font-bold mb-2">No deleted records</h3>
-            <p className="text-gray-500">All intern profiles are active.</p>
+      <section className="max-w-4xl mx-auto px-6 py-10">
+        {interns.length === 0 ? (
+          <div className="text-center py-20 border border-gray-800 rounded-xl">
+            <div className="text-4xl mb-3">🗑️</div>
+            <p className="text-gray-400 font-medium mb-1">No deleted records</p>
+            <p className="text-gray-500 text-sm">Soft-deleted interns will appear here for restoration.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {records.map(record => {
-              const daysLeft = daysUntilPermanent(record.deleted_at)
-              return (
-                <div key={record.id} className={`bg-gray-900 border rounded-xl px-6 py-4 flex items-center justify-between ${
-                  daysLeft < 10 ? 'border-red-800' : 'border-gray-800'
-                }`}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-red-900 flex items-center justify-center font-bold text-red-400">
-                      {record.full_name[0]}
-                    </div>
-                    <div>
-                      <p className="font-medium">{record.full_name}</p>
-                      <p className="text-sm text-gray-400">{record.cohort} · Deleted {daysAgo(record.deleted_at)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`text-xs px-2 py-1 rounded-full border ${
-                      daysLeft < 10
-                        ? 'text-red-400 border-red-800'
-                        : 'text-gray-400 border-gray-700'
-                    }`}>
-                      {daysLeft > 0 ? `${daysLeft}d until purge` : 'Purge due'}
-                    </span>
-                    <button
-                      onClick={() => handleRestore(record.id)}
-                      disabled={restoring === record.id}
-                      className="text-green-400 hover:text-green-300 text-xs border border-green-800 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {restoring === record.id ? 'Restoring...' : 'Restore'}
-                    </button>
-                  </div>
+            {interns.map(intern => (
+              <div key={intern.id} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between hover:border-gray-600 transition-colors flex-wrap gap-3">
+                <div>
+                  <p className="font-medium">{intern.full_name}</p>
+                  <p className="text-sm text-gray-400">{intern.cohort}</p>
+                  <p className="text-xs text-red-400 mt-0.5">Deleted {new Date(intern.deleted_at).toLocaleDateString()}</p>
                 </div>
-              )
-            })}
+                <button onClick={() => handleRestore(intern.id)} disabled={restoring === intern.id}
+                  className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500">
+                  {restoring === intern.id ? 'Restoring...' : 'Restore'}
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </section>

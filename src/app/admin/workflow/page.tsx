@@ -8,21 +8,25 @@ type Rule = {
   id: string
   name: string
   trigger_type: string
-  condition: { field: string; operator: string; value: unknown }
+  condition: { field: string; operator: string; value: string }
   action: { type: string; message: string }
   is_active: boolean
 }
+
+const ACTION_TYPES = ['restrict_login', 'lock_editing', 'notify_incomplete', 'disable_project_assignment']
+const OPERATORS = ['equals', 'not_equals', 'is_null', 'is_not_null']
+const TRIGGERS = ['intern_profile', 'project', 'task']
 
 export default function WorkflowPage() {
   const router = useRouter()
   const [rules, setRules] = useState<Rule[]>([])
   const [loading, setLoading] = useState(true)
-  const [toggling, setToggling] = useState<string | null>(null)
-  const [showAdd, setShowAdd] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name: '', trigger_type: 'intern_profile',
-    condition_field: '', condition_operator: 'equals', condition_value: '',
-    action_type: 'restrict_login', action_message: ''
+    field: '', operator: 'equals', value: '',
+    actionType: 'notify_incomplete', actionMessage: ''
   })
 
   useEffect(() => {
@@ -35,46 +39,44 @@ export default function WorkflowPage() {
 
   async function fetchRules() {
     const supabase = createClient()
-    const { data } = await supabase.from('workflow_rules').select('*').order('created_at')
+    const { data } = await supabase.from('workflow_rules').select('*').order('created_at', { ascending: false })
     setRules(data || [])
     setLoading(false)
   }
 
   async function toggleRule(id: string, current: boolean) {
-    setToggling(id)
     const supabase = createClient()
-    const { error } = await supabase.from('workflow_rules').update({ is_active: !current }).eq('id', id)
-    if (error) toast.error('Failed to update rule')
-    else {
-      toast.success(`Rule ${!current ? 'enabled' : 'disabled'}`)
-      setRules(prev => prev.map(r => r.id === id ? { ...r, is_active: !current } : r))
-    }
-    setToggling(null)
+    await supabase.from('workflow_rules').update({ is_active: !current }).eq('id', id)
+    setRules(prev => prev.map(r => r.id === id ? { ...r, is_active: !current } : r))
+    toast.success(current ? 'Rule disabled' : 'Rule enabled')
   }
 
-  async function addRule(e: React.FormEvent) {
-    e.preventDefault()
+  async function deleteRule(id: string) {
+    if (!confirm('Delete this workflow rule?')) return
     const supabase = createClient()
-    const { error } = await supabase.from('workflow_rules').insert([{
+    await supabase.from('workflow_rules').delete().eq('id', id)
+    setRules(prev => prev.filter(r => r.id !== id))
+    toast.success('Rule deleted')
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name || !form.field) { toast.error('Name and field are required'); return }
+    setSaving(true)
+    const supabase = createClient()
+    const { data, error } = await supabase.from('workflow_rules').insert([{
       name: form.name,
       trigger_type: form.trigger_type,
-      condition: { field: form.condition_field, operator: form.condition_operator, value: form.condition_value },
-      action: { type: form.action_type, message: form.action_message }
-    }])
-    if (error) toast.error('Failed to add rule')
-    else {
-      toast.success('Rule added!')
-      setShowAdd(false)
-      setForm({ name: '', trigger_type: 'intern_profile', condition_field: '', condition_operator: 'equals', condition_value: '', action_type: 'restrict_login', action_message: '' })
-      fetchRules()
-    }
-  }
-
-  const actionLabels: Record<string, string> = {
-    restrict_login: '🚫 Restrict Login',
-    disable_project_assignment: '📁 Disable Project Assignment',
-    lock_editing: '🔒 Lock Editing',
-    notify_incomplete: '🔔 Notify Incomplete'
+      condition: { field: form.field, operator: form.operator, value: form.value },
+      action: { type: form.actionType, message: form.actionMessage || `Rule: ${form.name}` },
+      is_active: true
+    }]).select()
+    if (error) { toast.error('Failed to create rule'); setSaving(false); return }
+    setRules(prev => [data[0], ...prev])
+    setForm({ name: '', trigger_type: 'intern_profile', field: '', operator: 'equals', value: '', actionType: 'notify_incomplete', actionMessage: '' })
+    setShowForm(false)
+    toast.success('Rule created!')
+    setSaving(false)
   }
 
   if (loading) return (
@@ -87,107 +89,113 @@ export default function WorkflowPage() {
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm">← Settings</button>
+          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">← Settings</button>
           <h1 className="text-xl font-bold text-blue-400">Workflow Rules</h1>
         </div>
-        <button onClick={() => setShowAdd(!showAdd)}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          {showAdd ? 'Cancel' : '+ Add Rule'}
+        <button onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {showForm ? 'Cancel' : '+ New Rule'}
         </button>
       </nav>
 
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <p className="text-gray-400 mb-8">Rules are evaluated automatically when records change. Enable or disable them without code changes.</p>
-
-        {showAdd && (
-          <form onSubmit={addRule} className="bg-gray-900 border border-blue-800 rounded-xl p-6 mb-8 space-y-4">
-            <h2 className="font-bold text-lg mb-4">New Rule</h2>
+      <section className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+        {showForm && (
+          <form onSubmit={handleCreate} className="bg-gray-900 border border-blue-800 rounded-xl p-6 space-y-4">
+            <h2 className="font-semibold text-blue-400">Create Workflow Rule</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Rule Name *</label>
-                <input required className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Block incomplete profiles"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Trigger Type</label>
-                <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.trigger_type} onChange={e => setForm({ ...form, trigger_type: e.target.value })}>
-                  <option value="intern_profile">Intern Profile</option>
-                  <option value="task">Task</option>
-                  <option value="project">Project</option>
+                <select value={form.trigger_type} onChange={e => setForm({ ...form, trigger_type: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {TRIGGERS.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-1 block">Condition Field *</label>
-                <input required placeholder="e.g. approval_status" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.condition_field} onChange={e => setForm({ ...form, condition_field: e.target.value })} />
+                <label className="text-sm text-gray-400 mb-1 block">Field *</label>
+                <input required value={form.field} onChange={e => setForm({ ...form, field: e.target.value })}
+                  placeholder="e.g. bio, approval_status"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="text-sm text-gray-400 mb-1 block">Operator</label>
-                <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.condition_operator} onChange={e => setForm({ ...form, condition_operator: e.target.value })}>
-                  <option value="equals">equals</option>
-                  <option value="not_equals">not equals</option>
-                  <option value="is_null">is empty</option>
-                  <option value="is_not_null">is not empty</option>
+                <select value={form.operator} onChange={e => setForm({ ...form, operator: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {OPERATORS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-1 block">Condition Value</label>
-                <input placeholder="e.g. rejected" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.condition_value} onChange={e => setForm({ ...form, condition_value: e.target.value })} />
+                <label className="text-sm text-gray-400 mb-1 block">Value (if applicable)</label>
+                <input value={form.value} onChange={e => setForm({ ...form, value: e.target.value })}
+                  placeholder="e.g. pending"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-1 block">Action Type</label>
-                <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.action_type} onChange={e => setForm({ ...form, action_type: e.target.value })}>
-                  <option value="restrict_login">Restrict Login</option>
-                  <option value="disable_project_assignment">Disable Project Assignment</option>
-                  <option value="lock_editing">Lock Editing</option>
-                  <option value="notify_incomplete">Notify Incomplete</option>
+                <label className="text-sm text-gray-400 mb-1 block">Action</label>
+                <select value={form.actionType} onChange={e => setForm({ ...form, actionType: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {ACTION_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="text-sm text-gray-400 mb-1 block">Action Message *</label>
-                <input required placeholder="Message shown when rule triggers" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={form.action_message} onChange={e => setForm({ ...form, action_message: e.target.value })} />
+                <label className="text-sm text-gray-400 mb-1 block">Action Message</label>
+                <input value={form.actionMessage} onChange={e => setForm({ ...form, actionMessage: e.target.value })}
+                  placeholder="e.g. Profile must be approved before login"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors">
-              Add Rule
+            <button type="submit" disabled={saving}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {saving ? 'Creating...' : 'Create Rule'}
             </button>
           </form>
         )}
 
-        <div className="space-y-4">
-          {rules.map(rule => (
-            <div key={rule.id} className={`bg-gray-900 border rounded-xl p-5 transition-colors ${rule.is_active ? 'border-gray-700' : 'border-gray-800 opacity-60'}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold">{rule.name}</h3>
-                    <span className="bg-gray-800 text-blue-400 text-xs px-2 py-0.5 rounded-full">{rule.trigger_type}</span>
+        {rules.length === 0 ? (
+          <div className="text-center py-20 border border-gray-800 rounded-xl">
+            <div className="text-4xl mb-3">⚙️</div>
+            <p className="text-gray-400 font-medium mb-1">No workflow rules yet</p>
+            <p className="text-gray-500 text-sm">Click "+ New Rule" to define your first workflow rule.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rules.map(rule => (
+              <div key={rule.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-colors">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-semibold text-white">{rule.name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${rule.is_active ? 'text-green-400 border-green-800' : 'text-gray-500 border-gray-700'}`}>
+                        {rule.is_active ? 'active' : 'disabled'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400 font-mono">
+                      IF {rule.trigger_type}.{rule.condition?.field} {rule.condition?.operator} {rule.condition?.value || '—'} → {rule.action?.type}
+                    </div>
+                    {rule.action?.message && (
+                      <p className="text-xs text-gray-500 mt-1 italic">"{rule.action.message}"</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400 mb-2 flex-wrap">
-                    <span className="bg-gray-800 px-2 py-0.5 rounded font-mono text-xs">{rule.condition.field}</span>
-                    <span className="text-gray-600">{rule.condition.operator}</span>
-                    <span className="bg-gray-800 px-2 py-0.5 rounded font-mono text-xs">{String(rule.condition.value)}</span>
-                    <span className="text-gray-600 mx-1">→</span>
-                    <span className="text-yellow-400 text-xs">{actionLabels[rule.action.type] || rule.action.type}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleRule(rule.id, rule.is_active)}
+                      className={`text-xs px-3 py-1.5 rounded border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${rule.is_active ? 'text-yellow-400 border-yellow-800 hover:border-yellow-600' : 'text-green-400 border-green-800 hover:border-green-600'}`}>
+                      {rule.is_active ? 'Disable' : 'Enable'}
+                    </button>
+                    <button onClick={() => deleteRule(rule.id)}
+                      className="text-xs text-red-400 border border-red-800 hover:border-red-600 px-3 py-1.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
+                      Delete
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 italic">&quot;{rule.action.message}&quot;</p>
                 </div>
-                <button
-                  onClick={() => toggleRule(rule.id, rule.is_active)}
-                  disabled={toggling === rule.id}
-                  className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-4 ${rule.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}
-                >
-                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${rule.is_active ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   )

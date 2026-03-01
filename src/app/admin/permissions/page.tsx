@@ -12,16 +12,24 @@ type Permission = {
   can_read: boolean
   can_update: boolean
   can_delete: boolean
-  access_level: string
-  field_restrictions: string[]
+  access_level: string | null
+  field_restrictions: string[] | null
 }
+
+const ROLES = ['admin', 'intern', 'public']
+const roleColors: Record<string, string> = {
+  admin: 'bg-blue-900 text-blue-300 border-blue-700',
+  intern: 'bg-green-900 text-green-300 border-green-700',
+  public: 'bg-gray-800 text-gray-400 border-gray-600',
+}
+const ACCESS_LEVELS = ['Full', 'Read Only', 'No Access']
 
 export default function PermissionsPage() {
   const router = useRouter()
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
-  const [editingRestrictions, setEditingRestrictions] = useState<string | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
+  const [editRestrictions, setEditRestrictions] = useState<string | null>(null)
   const [restrictionInput, setRestrictionInput] = useState('')
 
   useEffect(() => {
@@ -34,32 +42,33 @@ export default function PermissionsPage() {
 
   async function fetchPermissions() {
     const supabase = createClient()
-    const { data } = await supabase.from('role_permissions').select('*').order('role')
-    setPermissions((data || []).map(p => ({ ...p, field_restrictions: p.field_restrictions || [] })))
+    const { data } = await supabase.from('role_permissions').select('*').order('role').order('resource')
+    setPermissions(data || [])
     setLoading(false)
   }
 
-  async function updateField(id: string, field: string, value: unknown) {
-    setSaving(id)
+  async function updatePerm(id: string, field: string, value: unknown) {
+    setUpdating(id + field)
     const supabase = createClient()
-    const { error } = await supabase.from('role_permissions').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', id)
+    const { error } = await supabase.from('role_permissions').update({ [field]: value }).eq('id', id)
     if (error) toast.error('Failed to update')
     else {
       toast.success('Updated!')
       setPermissions(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
     }
-    setSaving(null)
+    setUpdating(null)
   }
 
   async function saveRestrictions(id: string) {
-    const restrictions = restrictionInput.split(',').map(s => s.trim()).filter(Boolean)
-    await updateField(id, 'field_restrictions', JSON.stringify(restrictions))
-    setEditingRestrictions(null)
+    const arr = restrictionInput.split(',').map(s => s.trim()).filter(Boolean)
+    await updatePerm(id, 'field_restrictions', arr.length > 0 ? arr : null)
+    setEditRestrictions(null)
   }
 
-  const actions: (keyof Permission)[] = ['can_create', 'can_read', 'can_update', 'can_delete']
-  const actionLabels = ['Create', 'Read', 'Update', 'Delete']
-  const roles = [...new Set(permissions.map(p => p.role))]
+  const grouped = ROLES.map(role => ({
+    role,
+    perms: permissions.filter(p => p.role === role)
+  })).filter(g => g.perms.length > 0)
 
   if (loading) return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
@@ -71,88 +80,65 @@ export default function PermissionsPage() {
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm">← Settings</button>
-          <h1 className="text-xl font-bold text-blue-400">Permission Matrix</h1>
+          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">← Settings</button>
+          <h1 className="text-xl font-bold text-blue-400">Permissions Matrix</h1>
         </div>
       </nav>
 
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <p className="text-gray-400 mb-8">Configure CRUD permissions, module access level, and field-level edit restrictions per role.</p>
-
-        {roles.map(role => (
-          <div key={role} className="mb-12">
-            <h2 className="text-lg font-bold mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm border ${
-                role === 'admin' ? 'text-blue-400 border-blue-800' :
-                role === 'intern' ? 'text-green-400 border-green-800' :
-                'text-gray-400 border-gray-700'
-              }`}>{role}</span>
-            </h2>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <table className="w-full">
+      <section className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+        {grouped.map(({ role, perms }) => (
+          <div key={role}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${roleColors[role] || 'bg-gray-800 text-gray-400 border-gray-600'}`}>{role}</span>
+              <span className="text-gray-500 text-sm">{perms.length} resource{perms.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
+              <table className="w-full min-w-[650px]">
                 <thead>
                   <tr className="border-b border-gray-800">
                     <th className="text-left px-6 py-3 text-sm text-gray-400">Resource</th>
-                    <th className="text-left px-4 py-3 text-sm text-gray-400">Access Level</th>
-                    {actionLabels.map(a => (
-                      <th key={a} className="text-center px-3 py-3 text-sm text-gray-400">{a}</th>
-                    ))}
-                    <th className="text-left px-4 py-3 text-sm text-gray-400">Field Restrictions</th>
+                    <th className="text-center px-3 py-3 text-sm text-gray-400">Create</th>
+                    <th className="text-center px-3 py-3 text-sm text-gray-400">Read</th>
+                    <th className="text-center px-3 py-3 text-sm text-gray-400">Update</th>
+                    <th className="text-center px-3 py-3 text-sm text-gray-400">Delete</th>
+                    <th className="text-left px-3 py-3 text-sm text-gray-400">Access Level</th>
+                    <th className="text-left px-3 py-3 text-sm text-gray-400">Field Restrictions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {permissions.filter(p => p.role === role).map((perm, i) => (
+                  {perms.map((perm, i) => (
                     <tr key={perm.id} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
-                      <td className="px-6 py-4 font-mono text-sm text-blue-300">{perm.resource}</td>
-                      <td className="px-4 py-4">
-                        <select
-                          value={perm.access_level || 'full'}
-                          onChange={e => updateField(perm.id, 'access_level', e.target.value)}
-                          disabled={saving === perm.id}
-                          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="full">Full</option>
-                          <option value="read_only">Read Only</option>
-                          <option value="none">No Access</option>
-                        </select>
-                      </td>
-                      {actions.map(action => (
-                        <td key={action} className="text-center px-3 py-4">
-                          <button
-                            onClick={() => updateField(perm.id, action, !perm[action])}
-                            disabled={saving === perm.id}
-                            className={`w-8 h-8 rounded-full border-2 transition-all text-sm ${
-                              perm[action] ? 'bg-green-600 border-green-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-500'
-                            }`}
-                          >
-                            {perm[action] ? '✓' : '✗'}
-                          </button>
+                      <td className="px-6 py-3 font-medium text-sm text-white">{perm.resource}</td>
+                      {(['can_create', 'can_read', 'can_update', 'can_delete'] as const).map(action => (
+                        <td key={action} className="text-center px-3 py-3">
+                          <input type="checkbox" checked={perm[action]}
+                            onChange={e => updatePerm(perm.id, action, e.target.checked)}
+                            disabled={updating === perm.id + action}
+                            className="w-4 h-4 accent-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                         </td>
                       ))}
-                      <td className="px-4 py-4">
-                        {editingRestrictions === perm.id ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              autoFocus
-                              value={restrictionInput}
+                      <td className="px-3 py-3">
+                        <select value={perm.access_level || 'Full'}
+                          onChange={e => updatePerm(perm.id, 'access_level', e.target.value)}
+                          disabled={updating === perm.id + 'access_level'}
+                          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          {ACCESS_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-3 py-3">
+                        {editRestrictions === perm.id ? (
+                          <div className="flex items-center gap-1">
+                            <input value={restrictionInput}
                               onChange={e => setRestrictionInput(e.target.value)}
-                              placeholder="cohort, bio, skills"
-                              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500 w-32"
-                            />
-                            <button onClick={() => saveRestrictions(perm.id)} className="text-green-400 text-xs hover:text-green-300">✓</button>
-                            <button onClick={() => setEditingRestrictions(null)} className="text-red-400 text-xs hover:text-red-300">✗</button>
+                              placeholder="bio, skills"
+                              className="w-28 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <button onClick={() => saveRestrictions(perm.id)} className="text-green-400 text-xs px-1 focus:outline-none focus:ring-1 focus:ring-green-500 rounded">✓</button>
+                            <button onClick={() => setEditRestrictions(null)} className="text-gray-500 text-xs px-1 focus:outline-none">✕</button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => {
-                              setEditingRestrictions(perm.id)
-                              setRestrictionInput((perm.field_restrictions || []).join(', '))
-                            }}
-                            className="text-xs text-gray-400 hover:text-white border border-gray-700 px-2 py-1 rounded transition-colors"
-                          >
-                            {(perm.field_restrictions || []).length > 0
-                              ? (perm.field_restrictions || []).join(', ')
-                              : 'Set restrictions'}
+                          <button onClick={() => { setEditRestrictions(perm.id); setRestrictionInput((perm.field_restrictions || []).join(', ')) }}
+                            className="text-xs text-gray-400 hover:text-white border border-gray-700 px-2 py-0.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {perm.field_restrictions?.length ? perm.field_restrictions.join(', ') : 'Set restrictions'}
                           </button>
                         )}
                       </td>

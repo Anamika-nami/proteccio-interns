@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-type Field = {
+type FormField = {
   id: string
   field_key: string
   field_label: string
@@ -12,22 +12,24 @@ type Field = {
   is_required: boolean
   is_active: boolean
   visibility: string
+  classification: string
   sort_order: number
-  options: string[] | null
 }
 
-const FIELD_TYPES = ['text', 'email', 'textarea', 'dropdown', 'date']
-const VISIBILITY_OPTIONS = ['public', 'intern_only', 'admin_only', 'masked']
+const FIELD_TYPES = ['text', 'textarea', 'email', 'url', 'select', 'multiselect', 'date']
+const VISIBILITIES = ['public', 'intern_only', 'admin_only', 'masked']
+const CLASSIFICATIONS = ['public', 'internal', 'confidential', 'sensitive']
 
-export default function FormBuilder() {
+export default function FormBuilderPage() {
   const router = useRouter()
-  const [fields, setFields] = useState<Field[]>([])
+  const [fields, setFields] = useState<FormField[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [saving, setSaving] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [updating, setUpdating] = useState<string | null>(null)
   const [newField, setNewField] = useState({
     field_key: '', field_label: '', field_type: 'text',
-    is_required: false, visibility: 'public', options: ''
+    is_required: false, visibility: 'intern_only', classification: 'public'
   })
 
   useEffect(() => {
@@ -39,57 +41,47 @@ export default function FormBuilder() {
   }, [])
 
   async function fetchFields() {
-    const res = await fetch('/api/form-fields?form=intern_profile')
-    const data = await res.json()
-    setFields(Array.isArray(data) ? data : [])
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('form_fields')
+      .select('*')
+      .eq('form_name', 'intern_profile')
+      .order('sort_order')
+    setFields(data || [])
     setLoading(false)
   }
 
-  async function handleToggle(field: Field, key: 'is_required' | 'is_active') {
-    setSaving(field.id)
-    const res = await fetch('/api/form-fields', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: field.id, [key]: !field[key] })
-    })
-    if (res.ok) {
-      toast.success('Updated!')
-      setFields(prev => prev.map(f => f.id === field.id ? { ...f, [key]: !field[key] } : f))
-    } else toast.error('Failed to update')
-    setSaving(null)
-  }
-
-  async function handleVisibility(field: Field, visibility: string) {
-    setSaving(field.id)
-    const res = await fetch('/api/form-fields', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: field.id, visibility })
-    })
-    if (res.ok) {
-      toast.success('Visibility updated!')
-      setFields(prev => prev.map(f => f.id === field.id ? { ...f, visibility } : f))
-    } else toast.error('Failed to update')
-    setSaving(null)
-  }
-
-  async function handleAddField(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
+    if (!newField.field_key || !newField.field_label) { toast.error('Key and label are required'); return }
+    setSaving(true)
     const res = await fetch('/api/form-fields', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newField,
-        options: newField.options ? newField.options.split(',').map(s => s.trim()) : null,
-        sort_order: fields.length
-      })
+      body: JSON.stringify({ ...newField, form_name: 'intern_profile', sort_order: fields.length + 1 })
     })
     if (res.ok) {
-      toast.success('Field added!')
-      setNewField({ field_key: '', field_label: '', field_type: 'text', is_required: false, visibility: 'public', options: '' })
-      setShowAdd(false)
-      fetchFields()
-    } else toast.error('Failed to add field')
+      const created = await res.json()
+      setFields(prev => [...prev, created])
+      setNewField({ field_key: '', field_label: '', field_type: 'text', is_required: false, visibility: 'intern_only', classification: 'public' })
+      setShowForm(false)
+      toast.success('Field created!')
+    } else toast.error('Failed to create field')
+    setSaving(false)
+  }
+
+  async function updateField(id: string, key: string, value: unknown) {
+    setUpdating(id + key)
+    const res = await fetch('/api/form-fields', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, [key]: value })
+    })
+    if (res.ok) {
+      toast.success('Updated!')
+      setFields(prev => prev.map(f => f.id === id ? { ...f, [key]: value } : f))
+    } else toast.error('Failed')
+    setUpdating(null)
   }
 
   if (loading) return (
@@ -102,130 +94,100 @@ export default function FormBuilder() {
     <main className="min-h-screen bg-gray-950 text-white">
       <nav className="flex items-center justify-between px-10 py-5 border-b border-gray-800">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm">← Settings</button>
+          <button onClick={() => router.push('/admin/settings')} className="text-gray-400 hover:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">← Settings</button>
           <h1 className="text-xl font-bold text-blue-400">Form Builder</h1>
         </div>
-        <button onClick={() => setShowAdd(!showAdd)}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          {showAdd ? 'Cancel' : '+ Add Field'}
+        <button onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {showForm ? 'Cancel' : '+ Add Field'}
         </button>
       </nav>
 
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <p className="text-gray-400 mb-8">Configure the intern profile form. Changes reflect immediately — no redeployment needed.</p>
-
-        {showAdd && (
-          <form onSubmit={handleAddField} className="bg-gray-900 border border-blue-800 rounded-xl p-6 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Field Key (no spaces) *</label>
-              <input required placeholder="e.g. github_url"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                value={newField.field_key}
-                onChange={e => setNewField({ ...newField, field_key: e.target.value.replace(/\s/g, '_').toLowerCase() })}
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Field Label *</label>
-              <input required placeholder="e.g. GitHub URL"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                value={newField.field_label}
-                onChange={e => setNewField({ ...newField, field_label: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Field Type *</label>
-              <select
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                value={newField.field_type}
-                onChange={e => setNewField({ ...newField, field_type: e.target.value })}
-              >
-                {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Visibility</label>
-              <select
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                value={newField.visibility}
-                onChange={e => setNewField({ ...newField, visibility: e.target.value })}
-              >
-                {VISIBILITY_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </div>
-            {newField.field_type === 'dropdown' && (
-              <div className="md:col-span-2">
-                <label className="text-sm text-gray-400 mb-1 block">Options (comma separated)</label>
-                <input placeholder="Option 1, Option 2, Option 3"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  value={newField.options}
-                  onChange={e => setNewField({ ...newField, options: e.target.value })}
-                />
+      <section className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+        {showForm && (
+          <form onSubmit={handleCreate} className="bg-gray-900 border border-blue-800 rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="md:col-span-2 font-semibold text-blue-400">New Field</h2>
+            {[
+              { label: 'Field Key *', field: 'field_key', placeholder: 'e.g. linkedin_url' },
+              { label: 'Field Label *', field: 'field_label', placeholder: 'e.g. LinkedIn URL' },
+            ].map(({ label, field, placeholder }) => (
+              <div key={field}>
+                <label className="text-sm text-gray-400 mb-1 block">{label}</label>
+                <input required placeholder={placeholder}
+                  value={newField[field as keyof typeof newField] as string}
+                  onChange={e => setNewField({ ...newField, [field]: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-            )}
-            <div className="md:col-span-2 flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={newField.is_required}
-                  onChange={e => setNewField({ ...newField, is_required: e.target.checked })}
-                  className="w-4 h-4 accent-blue-500"
-                />
-                <span className="text-sm text-gray-300">Required field</span>
-              </label>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors ml-auto">
-                Add Field
+            ))}
+            {[
+              { label: 'Field Type', field: 'field_type', options: FIELD_TYPES },
+              { label: 'Visibility', field: 'visibility', options: VISIBILITIES },
+              { label: 'Classification', field: 'classification', options: CLASSIFICATIONS },
+            ].map(({ label, field, options }) => (
+              <div key={field}>
+                <label className="text-sm text-gray-400 mb-1 block">{label}</label>
+                <select value={newField[field as keyof typeof newField] as string}
+                  onChange={e => setNewField({ ...newField, [field]: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {options.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <input type="checkbox" id="required" checked={newField.is_required}
+                onChange={e => setNewField({ ...newField, is_required: e.target.checked })}
+                className="w-4 h-4 focus:ring-2 focus:ring-blue-500" />
+              <label htmlFor="required" className="text-sm text-gray-300">Required field</label>
+            </div>
+            <div className="md:col-span-2">
+              <button type="submit" disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {saving ? 'Creating...' : 'Create Field'}
               </button>
             </div>
           </form>
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <table className="w-full">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-6 py-3 text-sm text-gray-400">Field</th>
                 <th className="text-left px-4 py-3 text-sm text-gray-400">Type</th>
                 <th className="text-left px-4 py-3 text-sm text-gray-400">Visibility</th>
-                <th className="text-center px-4 py-3 text-sm text-gray-400">Required</th>
-                <th className="text-center px-4 py-3 text-sm text-gray-400">Active</th>
+                <th className="text-left px-4 py-3 text-sm text-gray-400">Classification</th>
+                <th className="text-left px-4 py-3 text-sm text-gray-400">Active</th>
               </tr>
             </thead>
             <tbody>
               {fields.map((field, i) => (
                 <tr key={field.id} className={i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-950'}>
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-white">{field.field_label}</p>
-                    <p className="text-xs text-gray-500 font-mono">{field.field_key}</p>
+                  <td className="px-6 py-3">
+                    <p className="font-medium text-sm">{field.field_label}</p>
+                    <p className="text-xs font-mono text-gray-500">{field.field_key}</p>
                   </td>
-                  <td className="px-4 py-4">
-                    <span className="bg-gray-800 text-blue-400 text-xs px-2 py-1 rounded-full">{field.field_type}</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <select
-                      value={field.visibility || 'public'}
-                      onChange={e => handleVisibility(field, e.target.value)}
-                      disabled={saving === field.id}
-                      className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
-                    >
-                      {VISIBILITY_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+                  <td className="px-4 py-3 text-sm text-gray-300">{field.field_type}</td>
+                  <td className="px-4 py-3">
+                    <select value={field.visibility}
+                      onChange={e => updateField(field.id, 'visibility', e.target.value)}
+                      disabled={updating === field.id + 'visibility'}
+                      className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      {VISIBILITIES.map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </td>
-                  <td className="text-center px-4 py-4">
-                    <button
-                      onClick={() => handleToggle(field, 'is_required')}
-                      disabled={saving === field.id}
-                      className={`w-8 h-8 rounded-full border-2 transition-all text-sm ${
-                        field.is_required ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-500'
-                      }`}
-                    >
-                      {field.is_required ? '✓' : '○'}
-                    </button>
+                  <td className="px-4 py-3">
+                    <select value={field.classification || 'public'}
+                      onChange={e => updateField(field.id, 'classification', e.target.value)}
+                      disabled={updating === field.id + 'classification'}
+                      className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      {CLASSIFICATIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </td>
-                  <td className="text-center px-4 py-4">
-                    <button
-                      onClick={() => handleToggle(field, 'is_active')}
-                      disabled={saving === field.id}
-                      className={`relative w-10 h-5 rounded-full transition-colors ${field.is_active ? 'bg-green-600' : 'bg-gray-600'}`}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${field.is_active ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  <td className="px-4 py-3">
+                    <button onClick={() => updateField(field.id, 'is_active', !field.is_active)}
+                      aria-label={`Toggle ${field.field_label}`}
+                      className={`relative w-9 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${field.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${field.is_active ? 'translate-x-4' : 'translate-x-0.5'}`} />
                     </button>
                   </td>
                 </tr>
