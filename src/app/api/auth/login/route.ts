@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { logActivity } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -16,16 +15,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
 
-    const userId: string = data.user?.id ?? 'unknown'
-
-    await logActivity({
-      userId,
-      action: 'User logged in',
-      entityType: 'auth',
-      entityId: userId,
-      metadata: { email },
-      category: 'action'
-    })
+    try {
+      const userId: string = data.user?.id ?? 'unknown'
+      await supabase.from('activity_logs').insert([{
+        user_id: userId,
+        action: 'User logged in',
+        entity_type: 'auth',
+        entity_id: userId,
+        metadata: { email },
+        log_category: 'action'
+      }])
+    } catch {}
 
     return NextResponse.json({ success: true, user: data.user })
   } catch {

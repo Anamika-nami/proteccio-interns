@@ -106,3 +106,11 @@ export type WorkflowRule = {
   }
   is_active: boolean
 }
+
+export type UserPreferences = {
+  id?: string
+  user_id?: string
+  theme: 'dark' | 'light'
+  layout: 'grid' | 'list'
+  updated_at?: string
+}
