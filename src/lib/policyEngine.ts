@@ -1,5 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 
+type Policy = {
+  id: string
+  name: string
+  condition_field: string
+  condition_op: string
+  condition_value: string | null
+  action: string
+  action_params: Record<string, any>
+  priority: number
+}
+
 type PolicyContext = {
   orgId: string
   record: Record<string, any>
@@ -8,37 +19,26 @@ type PolicyContext = {
 
 type PolicyResult = {
   allowed: boolean
-  reason?: string
-  requiresApproval?: boolean
+  action?: string
+  params?: Record<string, any>
   policyName?: string
 }
 
-export async function evaluatePolicies(ctx: PolicyContext): Promise<PolicyResult> {
+export async function evaluatePolicies(context: PolicyContext): Promise<PolicyResult> {
   try {
     const supabase = await createClient()
     const { data: policies } = await supabase
       .from('policies')
       .select('*')
-      .eq('org_id', ctx.orgId)
+      .eq('org_id', context.orgId)
       .eq('is_active', true)
       .order('priority', { ascending: true })
 
-    if (!policies || policies.length === 0) return { allowed: true }
-
-    for (const policy of policies as any[]) {
-      if (!matchesCondition(policy, ctx.record)) continue
-
-      if (policy.action === 'require_approval') {
-        return { allowed: false, requiresApproval: true, reason: policy.description, policyName: policy.name }
-      }
-      if (policy.action === 'block') {
-        return { allowed: false, reason: policy.description, policyName: policy.name }
-      }
-      if (policy.action === 'disable_account') {
-        return { allowed: false, reason: policy.description, policyName: policy.name }
-      }
-      if (policy.action === 'expire_profile') {
-        return { allowed: false, reason: policy.description, policyName: policy.name }
+    for (const policy of (policies || []) as Policy[]) {
+      if (matchesCondition(policy, context.record)) {
+        if (policy.action === 'block') return { allowed: false, action: 'block', policyName: policy.name }
+        if (policy.action === 'require_approval') return { allowed: false, action: 'require_approval', params: policy.action_params, policyName: policy.name }
+        return { allowed: true, action: policy.action, params: policy.action_params, policyName: policy.name }
       }
     }
     return { allowed: true }
@@ -47,33 +47,21 @@ export async function evaluatePolicies(ctx: PolicyContext): Promise<PolicyResult
   }
 }
 
-function matchesCondition(policy: any, record: Record<string, any>): boolean {
-  if (!policy.condition_field || !policy.condition_op) return false
-  const value = record[policy.condition_field]
-  const target = policy.condition_value
-
+function matchesCondition(policy: Policy, record: Record<string, any>): boolean {
+  const fieldValue = record[policy.condition_field]
+  const condValue = policy.condition_value
   switch (policy.condition_op) {
-    case 'equals':       return String(value) === String(target)
-    case 'not_equals':   return String(value) !== String(target)
-    case 'greater_than': return Number(value) > Number(target)
-    case 'less_than':    return Number(value) < Number(target)
-    case 'is_null':      return value == null
-    case 'is_not_null':  return value != null
+    case 'equals': return String(fieldValue) === condValue
+    case 'not_equals': return String(fieldValue) !== condValue
+    case 'greater_than': return Number(fieldValue) > Number(condValue)
+    case 'less_than': return Number(fieldValue) < Number(condValue)
+    case 'is_null': return fieldValue == null
+    case 'is_not_null': return fieldValue != null
     case 'days_since': {
-      if (!value) return false
-      const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24)
-      return days >= Number(target)
+      if (!fieldValue) return false
+      const days = (Date.now() - new Date(fieldValue).getTime()) / (1000 * 60 * 60 * 24)
+      return days >= Number(condValue)
     }
     default: return false
   }
-}
-
-export async function getPolicies(orgId: string) {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('policies')
-    .select('*')
-    .eq('org_id', orgId)
-    .order('priority', { ascending: true })
-  return data || []
 }
