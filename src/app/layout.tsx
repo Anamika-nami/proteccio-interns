@@ -1,33 +1,36 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import { ConfigProvider } from '@/context/ConfigContext'
-import ConsentBanner from '@/components/ui/ConsentBanner'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Proteccio Interns',
-  description: 'A showcase of talent, projects, and progress from the Proteccio internship programme.',
+  title: { default: 'Proteccio', template: '%s | Proteccio' },
+  description: 'Privacy-First Intern Management Platform',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Proteccio' },
+  formatDetection: { telephone: false },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#2563EB',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ConfigProvider>
-          <Toaster position="top-right" toastOptions={{
-            success: { style: { background: '#1a2e1a', color: '#4ade80', border: '1px solid #166534' } },
-            error: { style: { background: '#2e1a1a', color: '#f87171', border: '1px solid #991b1b' } },
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-gray-950 text-white antialiased`}>
+        <Toaster position="top-right"
+          toastOptions={{
+            style: { background: '#1f2937', color: '#f9fafb', border: '1px solid #374151' },
+            success: { iconTheme: { primary: '#22c55e', secondary: '#f9fafb' } },
+            error: { iconTheme: { primary: '#ef4444', secondary: '#f9fafb' } },
           }} />
-          <ConsentBanner />
-          <Navbar />
-          {children}
-          <Footer />
-        </ConfigProvider>
+        {children}
       </body>
     </html>
   )

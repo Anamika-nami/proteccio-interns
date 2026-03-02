@@ -1,23 +1,30 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  compress: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 3600,
   },
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      {
+        source: '/static/(.*)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
     ]
+  },
+  experimental: {
+    optimizePackageImports: ['react-hot-toast'],
   },
 }
 
-export default nextConfig
+module.exports = nextConfig
