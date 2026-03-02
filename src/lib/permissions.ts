@@ -10,11 +10,7 @@ type PermissionData = {
 export async function getUserRole(userId: string): Promise<string> {
   try {
     const supabase = await createClient()
-    const { data } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .single()
+    const { data } = await supabase.from('users').select('role').eq('id', userId).single()
     return (data as any)?.role || 'public'
   } catch {
     return 'public'
@@ -24,11 +20,7 @@ export async function getUserRole(userId: string): Promise<string> {
 export async function checkFeature(featureKey: string): Promise<boolean> {
   try {
     const supabase = await createClient()
-    const { data } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', featureKey)
-      .single()
+    const { data } = await supabase.from('app_config').select('value').eq('key', featureKey).single()
     return (data as any)?.value === 'true'
   } catch {
     return true
@@ -38,7 +30,7 @@ export async function checkFeature(featureKey: string): Promise<boolean> {
 export async function checkPermission(
   role: string,
   resource: string,
-  action: 'can_create' | 'can_read' | 'can_update' | 'can_delete'
+  action: string
 ): Promise<boolean> {
   try {
     const supabase = await createClient()
@@ -48,8 +40,9 @@ export async function checkPermission(
       .eq('role', role)
       .eq('resource', resource)
       .single()
-    return (data as PermissionData)?.[action] === true
+    if (data === null || data === undefined) return true
+    return (data as PermissionData)[action as keyof PermissionData] === true
   } catch {
     return true
   }
-}// fixed
+}
