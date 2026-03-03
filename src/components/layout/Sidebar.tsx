@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext'
 
 const adminNav = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: '⊞' },
+  { label: 'Profile', path: '/profile', icon: '👤' },
   { label: 'Governance', path: '/admin/governance', icon: '🛡' },
   { label: 'Workflow', path: '/admin/workflow', icon: '⚙' },
   { label: 'Privacy', path: '/admin/privacy', icon: '🔒' },
@@ -14,9 +15,11 @@ const adminNav = [
   { label: 'Deleted Items', path: '/admin/deleted', icon: '🗑' },
   { label: 'Settings', path: '/admin/settings', icon: '⚙' },
 ]
+
 const internNav = [
   { label: 'My Portal', path: '/intern', icon: '🏠' },
   { label: 'Projects', path: '/projects', icon: '📁' },
+  { label: 'Profile', path: '/profile', icon: '👤' },
 ]
 
 export default function Sidebar({ role }: { role: 'admin' | 'intern' | 'public' }) {
