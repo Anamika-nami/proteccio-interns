@@ -18,11 +18,13 @@ export async function POST(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    await supabase.from('activity_logs').insert({
-      user_id: user.id,
-      action: `Data ${request_type} request submitted`,
-      log_category: 'privacy',
-    }).catch(() => {})
+    try {
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        action: `Data ${request_type} request submitted`,
+        log_category: 'privacy',
+      })
+    } catch {}
 
     return NextResponse.json(data)
   } catch {

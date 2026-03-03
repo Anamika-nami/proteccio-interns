@@ -15,11 +15,13 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.auth.updateUser({ password })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    await supabase.from('activity_logs').insert({
-      user_id: user.id,
-      action: 'Password changed',
-      log_category: 'security',
-    }).catch(() => {})
+    try {
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        action: 'Password changed',
+        log_category: 'security',
+      })
+    } catch {}
 
     return NextResponse.json({ ok: true })
   } catch {
