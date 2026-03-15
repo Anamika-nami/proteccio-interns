@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Proteccio Interns
+
+A privacy-first intern management platform built with Next.js, TypeScript, and Supabase.
+
+## Features
+
+- Intern profile management with approval workflows
+- Role-based access control (Admin, Intern, Public)
+- Data governance and privacy controls
+- Activity logging and audit trails
+- Projects and tasks management
+- Workflow automation
+- Notifications system
+
+## Prerequisites
+
+- Node.js 20.19.0 or higher
+- npm 10.1.0 or higher
+- Supabase account
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env.local` file in the root directory with your Supabase credentials:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://aijpazkdxaexvlpkvcpw.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm test` - Run tests with Vitest
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework**: Next.js 16.1.6
+- **Language**: TypeScript
+- **Database**: Supabase (PostgreSQL)
+- **Styling**: Tailwind CSS 4
+- **Testing**: Vitest + React Testing Library
+- **Validation**: Zod
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+├── src/
+│   ├── app/              # Next.js app router pages
+│   ├── components/       # Reusable React components
+│   ├── lib/              # Utility functions and core logic
+│   ├── services/         # Service layer for data operations
+│   ├── modules/          # Feature modules
+│   ├── types/            # TypeScript type definitions
+│   └── context/          # React context providers
+├── public/               # Static assets
+└── .env.local           # Environment variables (not in git)
+```
 
-## Deploy on Vercel
+## Database Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+You need to set up the following tables in your Supabase project:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `users` - User accounts with roles
+- `intern_profiles` - Intern information
+- `projects` - Project data
+- `tasks` - Task management
+- `app_config` - Application configuration
+- `activity_logs` - Audit trail
+- `notifications` - User notifications
+- `role_permissions` - RBAC permissions
+- `workflow_rules` - Automation rules
+- `policies` - Data access policies
+
+## Deployment
+
+The easiest way to deploy is using [Vercel](https://vercel.com):
+
+1. Push your code to GitHub
+2. Import the repository in Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+## License
+
+This project is private and proprietary.

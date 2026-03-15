@@ -16,11 +16,24 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else loadAll()
-    }).catch(() => router.push('/admin/login'))
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        router.push('/admin/login')
+        return
+      }
+      loadAll()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
+    })
+
+    return () => { mounted = false }
   }, [])
 
   async function loadAll() {
@@ -146,8 +159,8 @@ function DashboardContent() {
                 <div key={t.key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">{t.label}</span>
                   <button onClick={() => toggleConfig(t.key, on)}
-                    className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${on ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${on ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
               )
@@ -164,8 +177,8 @@ function DashboardContent() {
                 <div key={t.key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">{t.label}</span>
                   <button onClick={() => toggleConfig(t.key, on)}
-                    className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${on ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${on ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
               )

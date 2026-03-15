@@ -16,11 +16,25 @@ function GovernanceContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else loadAll()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      loadAll()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function loadAll() {
@@ -119,8 +133,8 @@ function GovernanceContent() {
                 <p className="text-xs text-gray-500 mt-0.5">{policy.description || `${policy.condition_field} ${policy.condition_op} ${policy.condition_value} → ${policy.action}`}</p>
               </div>
               <button onClick={() => togglePolicy(policy.id, policy.is_active)}
-                className={`relative w-10 h-5 rounded-full flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${policy.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${policy.is_active ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${policy.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${policy.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
           ))}
@@ -137,8 +151,8 @@ function GovernanceContent() {
               </div>
               {control.control_value === 'true' || control.control_value === 'false' ? (
                 <button onClick={() => toggleControl(control.control_key, control.control_value)}
-                  className={`relative w-10 h-5 rounded-full flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${control.control_value === 'true' ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${control.control_value === 'true' ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${control.control_value === 'true' ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${control.control_value === 'true' ? 'translate-x-5' : 'translate-x-0'}`} />
                 </button>
               ) : (
                 <span className="text-sm text-gray-300 bg-gray-800 px-3 py-1 rounded">{control.control_value}</span>

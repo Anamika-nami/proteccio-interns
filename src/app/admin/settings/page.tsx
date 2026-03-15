@@ -15,7 +15,7 @@ function ToggleRow({ config, value, onToggle }: { config: ConfigItem; value: str
       </div>
       <button onClick={onToggle} aria-label={`Toggle ${config.label}`}
         className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${value === 'true' ? 'bg-blue-600' : 'bg-gray-600'}`}>
-        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${value === 'true' ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${value === 'true' ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
     </div>
   )
@@ -29,11 +29,25 @@ export default function SettingsPage() {
   const [localValues, setLocalValues] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else fetchConfig()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      fetchConfig()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function fetchConfig() {

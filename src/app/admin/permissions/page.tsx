@@ -33,11 +33,25 @@ export default function PermissionsPage() {
   const [restrictionInput, setRestrictionInput] = useState('')
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else fetchPermissions()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      fetchPermissions()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function fetchPermissions() {

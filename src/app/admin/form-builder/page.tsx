@@ -33,11 +33,25 @@ export default function FormBuilderPage() {
   })
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else fetchFields()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      fetchFields()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function fetchFields() {
@@ -186,8 +200,8 @@ export default function FormBuilderPage() {
                   <td className="px-4 py-3">
                     <button onClick={() => updateField(field.id, 'is_active', !field.is_active)}
                       aria-label={`Toggle ${field.field_label}`}
-                      className={`relative w-9 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${field.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${field.is_active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${field.is_active ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${field.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
                   </td>
                 </tr>

@@ -21,6 +21,9 @@ export default function Home() {
           <Link href="/projects" className="border border-gray-700 hover:border-gray-500 px-8 py-3 rounded-lg font-medium transition-colors">
             View Projects
           </Link>
+          <Link href="/admin/login" className="border border-blue-600/50 hover:border-blue-600 hover:bg-blue-600/10 px-8 py-3 rounded-lg font-medium transition-colors">
+            Admin Login
+          </Link>
         </div>
       </section>
 

@@ -19,11 +19,25 @@ export default function DeletedPage() {
   const [restoring, setRestoring] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else fetchDeleted()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      fetchDeleted()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function fetchDeleted() {

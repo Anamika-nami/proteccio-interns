@@ -37,11 +37,25 @@ function ProfileContent() {
   const [prefForm, setPrefForm] = useState({ theme: 'dark', landing_page: '/admin/dashboard', language: 'en' })
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: auth }) => {
-      if (!auth.user) router.push('/admin/login')
-      else loadProfile()
+    
+    supabase.auth.getUser().then(({ data: auth, error }) => {
+      if (!mounted) return
+      if (error || !auth.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      loadProfile()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function loadProfile() {
@@ -237,8 +251,8 @@ function ProfileContent() {
                 <p className="text-xs text-gray-500 mt-0.5">Adds an extra layer of security to your account</p>
               </div>
               <button onClick={() => { setTwoFAEnabled(!twoFAEnabled); toast.success(twoFAEnabled ? '2FA disabled' : '2FA enabled (simulation)') }}
-                className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${twoFAEnabled ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${twoFAEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${twoFAEnabled ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${twoFAEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
             {twoFAEnabled && (
@@ -279,8 +293,8 @@ function ProfileContent() {
                 <div key={item.key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">{item.label}</span>
                   <button onClick={() => setPrivacyForm(p => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
-                    className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${privacyForm[item.key as keyof typeof privacyForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${privacyForm[item.key as keyof typeof privacyForm] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${privacyForm[item.key as keyof typeof privacyForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${privacyForm[item.key as keyof typeof privacyForm] ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
               ))}
@@ -297,8 +311,8 @@ function ProfileContent() {
                 <div key={item.key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">{item.label}</span>
                   <button onClick={() => setPrivacyForm(p => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
-                    className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${privacyForm[item.key as keyof typeof privacyForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${privacyForm[item.key as keyof typeof privacyForm] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${privacyForm[item.key as keyof typeof privacyForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${privacyForm[item.key as keyof typeof privacyForm] ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
               ))}
@@ -364,8 +378,8 @@ function ProfileContent() {
                   <p className="text-xs text-gray-500">{item.desc}</p>
                 </div>
                 <button onClick={() => setNotifForm(p => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifForm[item.key as keyof typeof notifForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${notifForm[item.key as keyof typeof notifForm] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifForm[item.key as keyof typeof notifForm] ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifForm[item.key as keyof typeof notifForm] ? 'translate-x-5' : 'translate-x-0'}`} />
                 </button>
               </div>
             ))}

@@ -33,11 +33,26 @@ function InternsContent() {
   const PAGE_SIZE = 10
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else { loadInterns(); loadFieldConfigs() }
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      loadInterns()
+      loadFieldConfigs()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => { loadInterns() }, [search, filterStatus, sortBy, page])

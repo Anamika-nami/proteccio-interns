@@ -16,21 +16,45 @@ export default function ConsentLogsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/admin/login')
-      else fetchLogs()
+    
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return
+      if (error || !data.user) {
+        setLoading(false)
+        router.push('/admin/login')
+        return
+      }
+      fetchLogs()
+    }).catch(() => {
+      if (mounted) {
+        setLoading(false)
+        router.push('/admin/login')
+      }
     })
+
+    return () => { mounted = false }
   }, [])
 
   async function fetchLogs() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('consent_logs')
-      .select('id, user_id, consented_at, version')
-      .order('consented_at', { ascending: false })
-    setLogs(data || [])
-    setLoading(false)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('consent_logs')
+        .select('id, user_id, consented_at, version')
+        .order('consented_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error fetching consent logs:', error)
+      }
+      
+      setLogs(data || [])
+    } catch (err) {
+      console.error('Failed to fetch consent logs:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (loading) return (
