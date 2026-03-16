@@ -28,35 +28,51 @@ export default function LogsPage() {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) {
-        setLoading(false)
-        router.push('/admin/login')
-        return
+    async function init() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getUser()
+        
+        if (!mounted) return
+        
+        if (error || !data.user) {
+          router.push('/admin/login')
+          return
+        }
+        
+        await fetchLogs(mounted)
+      } catch (err) {
+        console.error('Init error:', err)
+        if (mounted) {
+          router.push('/admin/login')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      fetchLogs()
-    }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-        router.push('/admin/login')
-      }
-    })
-
+    }
+    
+    init()
     return () => { mounted = false }
-  }, [])
+  }, [router])
 
-  async function fetchLogs() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('activity_logs')
-      .select('id, user_id, action, entity_type, log_category, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200)
-    setLogs(data || [])
-    setLoading(false)
+  async function fetchLogs(mounted = true) {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('activity_logs')
+        .select('id, user_id, action, entity_type, log_category, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200)
+      
+      if (mounted) {
+        setLogs(data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch logs:', err)
+    }
   }
 
   const filtered = activeCategory === 'all'

@@ -34,31 +34,46 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) {
-        setLoading(false)
-        router.push('/admin/login')
-        return
+    async function init() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getUser()
+        
+        if (!mounted) return
+        
+        if (error || !data.user) {
+          router.push('/admin/login')
+          return
+        }
+        
+        await fetchPermissions(mounted)
+      } catch (err) {
+        console.error('Init error:', err)
+        if (mounted) {
+          router.push('/admin/login')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      fetchPermissions()
-    }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-        router.push('/admin/login')
-      }
-    })
-
+    }
+    
+    init()
     return () => { mounted = false }
-  }, [])
+  }, [router])
 
-  async function fetchPermissions() {
-    const supabase = createClient()
-    const { data } = await supabase.from('role_permissions').select('*').order('role').order('resource')
-    setPermissions(data || [])
-    setLoading(false)
+  async function fetchPermissions(mounted = true) {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase.from('role_permissions').select('*').order('role').order('resource')
+      if (mounted) {
+        setPermissions(data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err)
+    }
   }
 
   async function updatePerm(id: string, field: string, value: unknown) {

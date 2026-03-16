@@ -17,39 +17,55 @@ function GovernanceContent() {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) {
-        setLoading(false)
-        router.push('/admin/login')
-        return
+    async function init() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getUser()
+        
+        if (!mounted) return
+        
+        if (error || !data.user) {
+          router.push('/admin/login')
+          return
+        }
+        
+        await loadAll(mounted)
+      } catch (err) {
+        console.error('Init error:', err)
+        if (mounted) {
+          router.push('/admin/login')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      loadAll()
-    }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-        router.push('/admin/login')
-      }
-    })
-
+    }
+    
+    init()
     return () => { mounted = false }
-  }, [])
+  }, [router])
 
-  async function loadAll() {
-    const supabase = createClient()
-    const [{ count: consents }, { count: interns }, { count: sensitive }, policiesRes, controlsRes] = await Promise.all([
-      supabase.from('consent_logs').select('*', { count: 'exact', head: true }),
-      supabase.from('intern_profiles').select('*', { count: 'exact', head: true }).eq('is_active', true).is('deleted_at', null),
-      supabase.from('form_fields').select('*', { count: 'exact', head: true }).eq('classification', 'sensitive'),
-      fetch('/api/policies').then(r => r.json()),
-      fetch('/api/data-controls').then(r => r.json()),
-    ])
-    setMetrics({ totalConsents: consents || 0, activeInterns: interns || 0, sensitiveFields: sensitive || 0 })
-    setPolicies(Array.isArray(policiesRes) ? policiesRes : [])
-    setControls(Array.isArray(controlsRes) ? controlsRes : [])
-    setLoading(false)
+  async function loadAll(mounted = true) {
+    try {
+      const supabase = createClient()
+      const [{ count: consents }, { count: interns }, { count: sensitive }, policiesRes, controlsRes] = await Promise.all([
+        supabase.from('consent_logs').select('*', { count: 'exact', head: true }),
+        supabase.from('intern_profiles').select('*', { count: 'exact', head: true }).eq('is_active', true).is('deleted_at', null),
+        supabase.from('form_fields').select('*', { count: 'exact', head: true }).eq('classification', 'sensitive'),
+        fetch('/api/policies').then(r => r.json()).catch(() => []),
+        fetch('/api/data-controls').then(r => r.json()).catch(() => []),
+      ])
+      
+      if (mounted) {
+        setMetrics({ totalConsents: consents || 0, activeInterns: interns || 0, sensitiveFields: sensitive || 0 })
+        setPolicies(Array.isArray(policiesRes) ? policiesRes : [])
+        setControls(Array.isArray(controlsRes) ? controlsRes : [])
+      }
+    } catch (err) {
+      console.error('Failed to load governance data:', err)
+    }
   }
 
   async function toggleControl(key: string, current: string) {

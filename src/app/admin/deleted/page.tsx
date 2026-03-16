@@ -20,35 +20,51 @@ export default function DeletedPage() {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) {
-        setLoading(false)
-        router.push('/admin/login')
-        return
+    async function init() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getUser()
+        
+        if (!mounted) return
+        
+        if (error || !data.user) {
+          router.push('/admin/login')
+          return
+        }
+        
+        await fetchDeleted(mounted)
+      } catch (err) {
+        console.error('Init error:', err)
+        if (mounted) {
+          router.push('/admin/login')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      fetchDeleted()
-    }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-        router.push('/admin/login')
-      }
-    })
-
+    }
+    
+    init()
     return () => { mounted = false }
-  }, [])
+  }, [router])
 
-  async function fetchDeleted() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('intern_profiles')
-      .select('id, full_name, cohort, deleted_at, deleted_by')
-      .not('deleted_at', 'is', null)
-      .order('deleted_at', { ascending: false })
-    setInterns(data || [])
-    setLoading(false)
+  async function fetchDeleted(mounted = true) {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('intern_profiles')
+        .select('id, full_name, cohort, deleted_at, deleted_by')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false })
+      
+      if (mounted) {
+        setInterns(data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch deleted interns:', err)
+    }
   }
 
   async function handleRestore(id: string) {

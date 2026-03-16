@@ -17,27 +17,37 @@ export default function ConsentLogsPage() {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
     
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) {
-        setLoading(false)
-        router.push('/admin/login')
-        return
+    async function init() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getUser()
+        
+        if (!mounted) return
+        
+        if (error || !data.user) {
+          router.push('/admin/login')
+          return
+        }
+        
+        await fetchLogs(mounted)
+      } catch (err) {
+        console.error('Init error:', err)
+        if (mounted) {
+          router.push('/admin/login')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      fetchLogs()
-    }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-        router.push('/admin/login')
-      }
-    })
-
+    }
+    
+    init()
     return () => { mounted = false }
-  }, [])
+  }, [router])
 
-  async function fetchLogs() {
+  async function fetchLogs(mounted = true) {
     try {
       const supabase = createClient()
       const { data, error } = await supabase
@@ -49,11 +59,11 @@ export default function ConsentLogsPage() {
         console.error('Error fetching consent logs:', error)
       }
       
-      setLogs(data || [])
+      if (mounted) {
+        setLogs(data || [])
+      }
     } catch (err) {
       console.error('Failed to fetch consent logs:', err)
-    } finally {
-      setLoading(false)
     }
   }
 
