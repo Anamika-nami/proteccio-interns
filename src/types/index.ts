@@ -114,3 +114,130 @@ export type UserPreferences = {
   layout: 'grid' | 'list'
   updated_at?: string
 }
+
+// ============================================================================
+// PRODUCTIVITY & OPERATIONAL GOVERNANCE TYPES
+// ============================================================================
+
+export type AttendanceStatus = 'present' | 'absent' | 'half_day' | 'leave'
+
+export type Attendance = {
+  id: string
+  intern_id: string
+  date: string
+  check_in_time: string | null
+  check_out_time: string | null
+  status: AttendanceStatus
+  working_hours: number
+  marked_by_admin: boolean
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type WorkLogProgressStatus = 'not_started' | 'in_progress' | 'completed'
+export type WorkLogReviewStatus = 'pending' | 'approved' | 'revision_requested'
+
+export type WorkLog = {
+  id: string
+  intern_id: string
+  task_id: string | null
+  date: string
+  description: string
+  hours_spent: number
+  challenges: string | null
+  progress_status: WorkLogProgressStatus
+  submitted_at: string
+  review_status: WorkLogReviewStatus
+  admin_comments: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type TaskEventType = 'assigned' | 'started' | 'updated' | 'completed' | 'reviewed' | 'reopened'
+
+export type TaskEvent = {
+  id: string
+  task_id: string
+  event_type: TaskEventType
+  description: string | null
+  metadata: Record<string, unknown> | null
+  created_by: string | null
+  timestamp: string
+}
+
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export type LeaveRequest = {
+  id: string
+  intern_id: string
+  start_date: string
+  end_date: string
+  reason: string
+  document_url: string | null
+  status: LeaveRequestStatus
+  admin_comment: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type WeeklySummary = {
+  id: string
+  intern_id: string
+  week_start_date: string
+  week_end_date: string
+  tasks_completed: number
+  tasks_pending: number
+  attendance_percentage: number
+  work_logs_submitted: number
+  work_logs_expected: number
+  total_hours_logged: number
+  admin_remarks: string | null
+  generated_at: string
+  generated_by: string | null
+}
+
+export type AttendanceSummary = {
+  intern_id: string
+  full_name: string
+  cohort: string
+  present_days: number
+  absent_days: number
+  half_days: number
+  leave_days: number
+  total_days: number
+  attendance_percentage: number
+  total_hours_worked: number
+  avg_hours_per_day: number
+}
+
+export type TaskMetrics = {
+  intern_id: string
+  full_name: string
+  total_tasks: number
+  completed_tasks: number
+  in_progress_tasks: number
+  pending_tasks: number
+  completion_rate: number
+  avg_completion_hours: number
+}
+
+export type ProductivityDashboard = {
+  intern_id: string
+  full_name: string
+  cohort: string
+  is_active: boolean
+  attendance_percentage: number
+  total_hours_worked: number
+  total_tasks: number
+  completed_tasks: number
+  task_completion_rate: number
+  avg_task_completion_hours: number
+  work_logs_submitted: number
+  work_logs_approved: number
+  total_hours_logged: number
+}

@@ -7,7 +7,16 @@
   "build": "next build",
   "start": "next start",
   "lint": "next lint",
-  "test": "vitest run"
+  "test": "vitest run",
+  "test:watch": "vitest",
+  "test:ui": "vitest --ui",
+  "test:coverage": "vitest run --coverage",
+  "test:unit": "vitest run src/__tests__/components/**/*.test.{ts,tsx}",
+  "test:api": "vitest run src/__tests__/api/**/*.test.ts",
+  "test:features": "vitest run src/__tests__/features/**/*.test.ts",
+  "test:integration": "vitest run src/__tests__/integration/**/*.test.ts",
+  "test:e2e": "vitest run src/__tests__/e2e/**/*.test.ts",
+  "test:admin": "vitest run src/__tests__/admin/**/*.test.ts"
 },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
