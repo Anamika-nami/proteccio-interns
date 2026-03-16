@@ -13,11 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
     }
 
-    const actionMap: Record<string, { lifecycle_status: string; approval_status?: string; is_active?: boolean }> = {
-      approve:    { lifecycle_status: 'approved', approval_status: 'active', is_active: true },
-      activate:   { lifecycle_status: 'active', is_active: true },
-      deactivate: { lifecycle_status: 'inactive', is_active: false },
-      archive:    { lifecycle_status: 'archived', is_active: false },
+    const actionMap: Record<string, { status: string; approval_status?: string; is_active?: boolean }> = {
+      approve:    { status: 'approved', approval_status: 'active', is_active: true },
+      activate:   { status: 'active', is_active: true },
+      deactivate: { status: 'inactive', is_active: false },
+      archive:    { status: 'archived', is_active: false },
     }
 
     const update = actionMap[action]
@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
 
     // Fetch current statuses to validate transitions
     const { data: interns } = await supabase
-      .from('intern_profiles').select('id, lifecycle_status').in('id', ids)
+      .from('intern_profiles').select('id, status').in('id', ids)
 
     const validIds = (interns || [])
-      .filter(i => canTransition(i.lifecycle_status, update.lifecycle_status))
+      .filter(i => canTransition(i.status, update.status))
       .map(i => i.id)
 
     if (validIds.length === 0) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         intern_id: id,
         changed_by: user.id,
         event_type: 'status_change',
-        new_value: update.lifecycle_status,
+        new_value: update.status,
       }))
     )
 

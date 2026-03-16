@@ -221,8 +221,8 @@ function InternDetailContent() {
           <p className="text-sm text-gray-400">{intern.cohort} · {intern.bio || 'No bio'}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs px-2 py-0.5 rounded-full border ${lifecycleColor(intern.lifecycle_status || 'draft')}`}>
-            {lifecycleLabel(intern.lifecycle_status || 'draft')}
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${lifecycleColor(intern.status || 'draft')}`}>
+            {lifecycleLabel(intern.status || 'draft')}
           </span>
           {intern.tenure_status && (
             <span className="text-xs px-2 py-0.5 rounded-full border bg-indigo-900 text-indigo-300 border-indigo-700">

@@ -46,7 +46,7 @@ function DashboardContent() {
         supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null),
         supabase.from('consent_logs').select('id', { count: 'exact', head: true }),
         supabase.from('activity_logs').select('action, created_at, log_category').order('created_at', { ascending: false }).limit(5),
-        supabase.from('app_config').select('config_key, config_value'),
+        supabase.from('app_config').select('key, value'),
       ])
 
       setMetrics({
@@ -59,7 +59,7 @@ function DashboardContent() {
 
       const cfgMap: Config = {}
       for (const row of configRes.data || []) {
-        cfgMap[row.config_key] = row.config_value
+        cfgMap[row.key] = row.value
       }
       setConfig(cfgMap)
 
@@ -94,7 +94,7 @@ function DashboardContent() {
     const supabase = createClient()
     const newVal = current ? 'false' : 'true'
     await supabase.from('app_config')
-      .upsert({ config_key: key, config_value: newVal }, { onConflict: 'config_key' })
+      .upsert({ key: key, value: newVal }, { onConflict: 'key' })
     setConfig(prev => ({ ...prev, [key]: newVal }))
   }
 

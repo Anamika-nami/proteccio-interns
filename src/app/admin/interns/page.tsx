@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 type Intern = {
   id: string; full_name: string; cohort: string; skills: string[]
-  approval_status: string; lifecycle_status: string; is_active: boolean
+  approval_status: string; status: string; is_active: boolean
   bio: string | null; created_at: string
 }
 
@@ -62,10 +62,10 @@ function InternsContent() {
     try {
       const supabase = createClient()
       let query = supabase.from('intern_profiles')
-        .select('id, full_name, cohort, skills, approval_status, lifecycle_status, is_active, bio, created_at', { count: 'exact' })
+        .select('id, full_name, cohort, skills, approval_status, status, is_active, bio, created_at', { count: 'exact' })
         .is('deleted_at', null)
 
-      if (filterStatus !== 'all') query = query.eq('lifecycle_status', filterStatus)
+      if (filterStatus !== 'all') query = query.eq('status', filterStatus)
       if (search.trim()) query = query.ilike('full_name', `%${search.trim()}%`)
 
       if (sortBy === 'name') query = query.order('full_name')
@@ -93,7 +93,7 @@ function InternsContent() {
 
   async function handleStatusChange(id: string, newStatus: string) {
     const supabase = createClient()
-    const updateData: any = { lifecycle_status: newStatus, status_changed_at: new Date().toISOString() }
+    const updateData: any = { status: newStatus, status_changed_at: new Date().toISOString() }
     if (newStatus === 'active') { updateData.is_active = true; updateData.approval_status = 'active' }
     if (newStatus === 'inactive') { updateData.is_active = false }
     if (newStatus === 'approved') { updateData.approval_status = 'active' }
@@ -264,11 +264,19 @@ function InternsContent() {
                   <p className="font-medium text-sm text-gray-200">{intern.full_name}</p>
                   <p className="text-xs text-gray-500">{intern.cohort} · {new Date(intern.created_at).toLocaleDateString()}</p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${lifecycleColor(intern.lifecycle_status)}`}>
-                  {lifecycleLabel(intern.lifecycle_status)}
+                <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${lifecycleColor(intern.status)}`}>
+                  {lifecycleLabel(intern.status)}
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {getAvailableTransitions(intern.lifecycle_status).map(t => (
+                  <button onClick={() => router.push(`/admin/evaluations/${intern.id}`)}
+                    className="text-xs border border-blue-700 text-blue-400 hover:bg-blue-900/20 px-2 py-1 rounded transition-colors">
+                    📝 Evaluate
+                  </button>
+                  <button onClick={() => router.push(`/admin/reports/${intern.id}`)}
+                    className="text-xs border border-purple-700 text-purple-400 hover:bg-purple-900/20 px-2 py-1 rounded transition-colors">
+                    📊 Report
+                  </button>
+                  {getAvailableTransitions(intern.status).map(t => (
                     <button key={t} onClick={() => handleStatusChange(intern.id, t)}
                       className={`text-xs border px-2 py-1 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${lifecycleColor(t)}`}>
                       → {lifecycleLabel(t)}

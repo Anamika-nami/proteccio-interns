@@ -241,3 +241,150 @@ export type ProductivityDashboard = {
   work_logs_approved: number
   total_hours_logged: number
 }
+
+// ============================================================================
+// DAY 17: INTERN LIFECYCLE & EVALUATION TYPES
+// ============================================================================
+
+export type InternStatus = 'ACTIVE' | 'COMPLETION_REVIEW' | 'COMPLETED' | 'EXTENDED' | 'TERMINATED'
+
+export type InternEvaluation = {
+  id: string
+  intern_id: string
+  evaluator_id: string
+  task_quality_score: number
+  consistency_score: number
+  attendance_score: number
+  communication_score: number
+  learning_score: number
+  overall_score: number
+  feedback: string | null
+  created_at: string
+}
+
+export type CreateEvaluationDTO = {
+  intern_id: string
+  task_quality_score: number
+  consistency_score: number
+  attendance_score: number
+  communication_score: number
+  learning_score: number
+  feedback?: string
+}
+
+export type InternFeedback = {
+  id: string
+  intern_id: string
+  learning_experience_rating: number
+  task_difficulty_rating: number
+  mentorship_rating: number
+  program_structure_rating: number
+  suggestions: string | null
+  created_at: string
+}
+
+export type CreateFeedbackDTO = {
+  intern_id: string
+  learning_experience_rating: number
+  task_difficulty_rating: number
+  mentorship_rating: number
+  program_structure_rating: number
+  suggestions?: string
+}
+
+export type Badge = {
+  id: string
+  name: string
+  description: string
+  icon: string | null
+  criteria: Record<string, unknown>
+  created_at: string
+}
+
+export type InternBadge = {
+  id: string
+  intern_id: string
+  badge_id: string
+  earned_at: string
+}
+
+export type InternBadgeWithDetails = InternBadge & {
+  badge: Badge
+}
+
+export type CompletionReviewIntern = {
+  id: string
+  full_name: string
+  cohort: string
+  status: InternStatus
+  has_evaluation: boolean
+  evaluation_score: number | null
+  completed_tasks: number
+  total_tasks: number
+  attendance_percentage: number
+  badges_earned: number
+}
+
+export type InternReport = {
+  intern: {
+    id: string
+    full_name: string
+    cohort: string
+    bio: string | null
+    skills: string[]
+    status: InternStatus
+    joined_at: string
+  }
+  attendance: {
+    present_days: number
+    absent_days: number
+    half_days: number
+    leave_days: number
+    total_days: number
+    attendance_percentage: number
+    total_hours_worked: number
+  }
+  tasks: {
+    total_tasks: number
+    completed_tasks: number
+    in_progress_tasks: number
+    pending_tasks: number
+    completion_rate: number
+  }
+  skills: {
+    initial_skills: string[]
+    current_skills: string[]
+    skills_added: string[]
+  }
+  evaluations: InternEvaluation[]
+  badges: InternBadgeWithDetails[]
+  feedback: InternFeedback | null
+}
+
+export type FeedbackAnalytics = {
+  total_responses: number
+  average_ratings: {
+    learning_experience: number
+    task_difficulty: number
+    mentorship: number
+    program_structure: number
+  }
+  rating_distribution: {
+    rating: number
+    count: number
+  }[]
+  recent_suggestions: {
+    intern_name: string
+    suggestion: string
+    created_at: string
+  }[]
+}
+
+export type CertificateData = {
+  intern_name: string
+  role: string
+  organization: string
+  duration: string
+  completion_date: string
+  certificate_id: string
+}
