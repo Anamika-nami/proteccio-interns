@@ -27,10 +27,29 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<Config>(defaultConfig)
 
   useEffect(() => {
+    // Temporary fix: Add error handling to prevent infinite loops
+    let mounted = true
     fetch('/api/config')
-      .then(r => r.json())
-      .then(data => setConfig({ ...defaultConfig, ...data }))
-      .catch(() => {})
+      .then(r => {
+        if (!r.ok) {
+          console.warn('Config API failed, using defaults')
+          return {}
+        }
+        return r.json()
+      })
+      .then(data => {
+        if (mounted) {
+          setConfig({ ...defaultConfig, ...data })
+        }
+      })
+      .catch((error) => {
+        console.warn('Config fetch failed, using defaults:', error)
+        if (mounted) {
+          setConfig(defaultConfig)
+        }
+      })
+    
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => {

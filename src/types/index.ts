@@ -1,5 +1,8 @@
 export type UserRole = 'admin' | 'intern' | 'public'
 
+// Re-export collaboration types
+export * from './collaboration'
+
 export type Intern = {
   id: string
   full_name: string
@@ -35,6 +38,9 @@ export type Task = {
   due_date: string | null
   created_by: string | null
   created_at: string
+  priority?: string
+  collaboration_count?: number
+  unread_comments?: number
 }
 
 export type AppConfig = {

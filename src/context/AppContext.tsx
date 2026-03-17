@@ -21,11 +21,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const refreshConfig = useCallback(async () => {
-    const supabase = createClient()
-    const { data } = await supabase.from('app_config').select('key, value')
-    const cfg: Config = {}
-    ;(data || []).forEach((r: any) => { cfg[r.key] = r.value })
-    setConfig(cfg)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.from('app_config').select('key, value')
+      
+      if (error) {
+        console.warn('Config refresh failed, using defaults:', error)
+        return
+      }
+      
+      const cfg: Config = {}
+      ;(data || []).forEach((r: any) => { cfg[r.key] = r.value })
+      setConfig(cfg)
+    } catch (error) {
+      console.warn('Config refresh error:', error)
+    }
   }, [])
 
   const signOut = useCallback(async () => {
