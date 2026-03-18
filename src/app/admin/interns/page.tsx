@@ -199,15 +199,15 @@ function InternsContent() {
 
       {/* Search & Filters */}
       <div className="flex gap-3 flex-wrap">
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
-          placeholder="Search by name..."
+        <input id="intern_search" name="intern_search" type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
+          placeholder="Search by name..." autoComplete="off"
           className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-48" />
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}
+        <select id="filter_status" name="filter_status" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}
           className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="all">All Statuses</option>
           {LIFECYCLE_STATUSES.map(s => <option key={s} value={s}>{lifecycleLabel(s)}</option>)}
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
+        <select id="sort_by" name="sort_by" value={sortBy} onChange={e => setSortBy(e.target.value as any)}
           className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="created">Sort: Newest</option>
           <option value="name">Sort: Name</option>

@@ -83,10 +83,12 @@ export function NewConversationForm({ onSubmit, onCancel }: NewConversationFormP
 
         {/* Subject */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="conversation_subject" className="block text-sm font-medium text-gray-300 mb-2">
             Subject
           </label>
           <input
+            id="conversation_subject"
+            name="conversation_subject"
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -128,10 +130,12 @@ export function NewConversationForm({ onSubmit, onCancel }: NewConversationFormP
 
         {/* Priority */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="conversation_priority" className="block text-sm font-medium text-gray-300 mb-2">
             Priority
           </label>
           <select
+            id="conversation_priority"
+            name="conversation_priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
@@ -146,10 +150,12 @@ export function NewConversationForm({ onSubmit, onCancel }: NewConversationFormP
 
         {/* Initial Message */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="initial_message" className="block text-sm font-medium text-gray-300 mb-2">
             Message
           </label>
           <textarea
+            id="initial_message"
+            name="initial_message"
             value={initialMessage}
             onChange={(e) => setInitialMessage(e.target.value)}
             placeholder="Describe your question or what you need help with in detail..."

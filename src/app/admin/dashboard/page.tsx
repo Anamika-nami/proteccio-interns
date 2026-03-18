@@ -14,6 +14,9 @@ function DashboardContent() {
   const [interns, setInterns] = useState<any[]>([])
   const [config, setConfig] = useState<Config>({})
   const [loading, setLoading] = useState(true)
+  const [metricsLoading, setMetricsLoading] = useState(true)
+  const [activityLoading, setActivityLoading] = useState(true)
+  const [internsLoading, setInternsLoading] = useState(true)
 
   useEffect(() => {
     let mounted = true
@@ -25,7 +28,11 @@ function DashboardContent() {
         router.push('/admin/login')
         return
       }
-      loadAll()
+      // Load data progressively instead of all at once
+      loadMetrics()
+      loadConfig()
+      loadActivity()
+      loadInterns()
     }).catch(() => {
       if (mounted) {
         setLoading(false)
@@ -36,17 +43,14 @@ function DashboardContent() {
     return () => { mounted = false }
   }, [])
 
-  async function loadAll() {
+  async function loadMetrics() {
     try {
       const supabase = createClient()
-
-      const [internsRes, pendingRes, projectsRes, consentRes, activityRes, configRes] = await Promise.all([
+      const [internsRes, pendingRes, projectsRes, consentRes] = await Promise.all([
         supabase.from('intern_profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).is('deleted_at', null),
         supabase.from('intern_profiles').select('id', { count: 'exact', head: true }).eq('approval_status', 'pending').is('deleted_at', null),
         supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null),
         supabase.from('consent_logs').select('id', { count: 'exact', head: true }),
-        supabase.from('activity_logs').select('action, created_at, log_category').order('created_at', { ascending: false }).limit(5),
-        supabase.from('app_config').select('key, value'),
       ])
 
       setMetrics({
@@ -55,27 +59,62 @@ function DashboardContent() {
         projects:  projectsRes.count || 0,
         consented: consentRes.count  || 0,
       })
-      setRecentActivity(activityRes.data || [])
+    } catch (err) {
+      console.error('Metrics load error:', err)
+    } finally {
+      setMetricsLoading(false)
+    }
+  }
 
+  async function loadConfig() {
+    try {
+      const supabase = createClient()
+      const { data: configRes } = await supabase.from('app_config').select('key, value')
+      
       const cfgMap: Config = {}
-      for (const row of configRes.data || []) {
+      for (const row of configRes || []) {
         cfgMap[row.key] = row.value
       }
       setConfig(cfgMap)
+    } catch (err) {
+      console.error('Config load error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      // Load interns list for the table section
+  async function loadActivity() {
+    try {
+      const supabase = createClient()
+      const { data: activityRes } = await supabase
+        .from('activity_logs')
+        .select('action, created_at, log_category')
+        .order('created_at', { ascending: false })
+        .limit(5)
+      
+      setRecentActivity(activityRes || [])
+    } catch (err) {
+      console.error('Activity load error:', err)
+    } finally {
+      setActivityLoading(false)
+    }
+  }
+
+  async function loadInterns() {
+    try {
+      const supabase = createClient()
       const { data: internData } = await supabase
         .from('intern_profiles')
         .select('id, full_name, cohort, approval_status, lifecycle_status, is_active, created_at')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(10)
+      
       setInterns(internData || [])
-
     } catch (err) {
-      console.error('Dashboard load error:', err)
+      console.error('Interns load error:', err)
     } finally {
-      setLoading(false)
+      setInternsLoading(false)
     }
   }
 
@@ -130,20 +169,26 @@ function DashboardContent() {
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">System Overview</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Active Interns',    value: metrics.interns,   color: 'text-blue-400',   icon: '👥' },
-              { label: 'Pending Approval',  value: metrics.pending,   color: 'text-yellow-400', icon: '⏳' },
-              { label: 'Total Projects',    value: metrics.projects,  color: 'text-green-400',  icon: '📁' },
-              { label: 'Consent Records',   value: metrics.consented, color: 'text-purple-400', icon: '✅' },
-            ].map(m => (
-              <div key={m.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xl">{m.icon}</span>
+            {metricsLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-5 animate-pulse h-24" />
+              ))
+            ) : (
+              [
+                { label: 'Active Interns',    value: metrics.interns,   color: 'text-blue-400',   icon: '👥' },
+                { label: 'Pending Approval',  value: metrics.pending,   color: 'text-yellow-400', icon: '⏳' },
+                { label: 'Total Projects',    value: metrics.projects,  color: 'text-green-400',  icon: '📁' },
+                { label: 'Consent Records',   value: metrics.consented, color: 'text-purple-400', icon: '✅' },
+              ].map(m => (
+                <div key={m.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xl">{m.icon}</span>
+                  </div>
+                  <p className={`text-3xl font-bold ${m.color}`}>{m.value}</p>
+                  <p className="text-xs text-gray-400 mt-1">{m.label}</p>
                 </div>
-                <p className={`text-3xl font-bold ${m.color}`}>{m.value}</p>
-                <p className="text-xs text-gray-400 mt-1">{m.label}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -202,7 +247,22 @@ function DashboardContent() {
               </button>
             </div>
           </div>
-          {interns.length === 0 ? (
+          {internsLoading ? (
+            <div className="px-5 py-12">
+              <div className="animate-pulse space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-800 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-800 rounded w-1/3"></div>
+                      <div className="h-3 bg-gray-800 rounded w-1/4"></div>
+                    </div>
+                    <div className="h-6 bg-gray-800 rounded w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : interns.length === 0 ? (
             <div className="px-5 py-12 text-center">
               <p className="text-gray-400 text-sm">No interns yet.</p>
               <button onClick={() => router.push('/admin/interns')} className="mt-3 text-blue-400 text-sm hover:text-blue-300">
@@ -231,7 +291,7 @@ function DashboardContent() {
               ))}
             </div>
           )}
-          {interns.length > 0 && (
+          {!internsLoading && interns.length > 0 && (
             <div className="px-5 py-3 border-t border-gray-800">
               <button onClick={() => router.push('/admin/interns')} className="text-xs text-blue-400 hover:text-blue-300">
                 View all interns →
@@ -242,20 +302,38 @@ function DashboardContent() {
       )}
 
       {/* Activity Feed */}
-      {config['widget_activity'] !== 'false' && recentActivity.length > 0 && (
+      {config['widget_activity'] !== 'false' && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-800">
             <h3 className="font-semibold text-gray-300 text-sm">Recent Activity</h3>
           </div>
-          <div className="divide-y divide-gray-800">
-            {recentActivity.map((log, i) => (
-              <div key={i} className="px-5 py-3 flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.log_category === 'security' ? 'bg-red-400' : log.log_category === 'privacy' ? 'bg-yellow-400' : 'bg-blue-400'}`} />
-                <span className="text-sm text-gray-300 flex-1">{log.action}</span>
-                <span className="text-xs text-gray-500 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</span>
+          {activityLoading ? (
+            <div className="px-5 py-12">
+              <div className="animate-pulse space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="flex-1 h-4 bg-gray-800 rounded"></div>
+                    <div className="h-3 bg-gray-800 rounded w-20"></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : recentActivity.length > 0 ? (
+            <div className="divide-y divide-gray-800">
+              {recentActivity.map((log, i) => (
+                <div key={i} className="px-5 py-3 flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.log_category === 'security' ? 'bg-red-400' : log.log_category === 'privacy' ? 'bg-yellow-400' : 'bg-blue-400'}`} />
+                  <span className="text-sm text-gray-300 flex-1">{log.action}</span>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-5 py-12 text-center">
+              <p className="text-gray-400 text-sm">No recent activity</p>
+            </div>
+          )}
         </div>
       )}
 

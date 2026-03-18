@@ -99,10 +99,12 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Topic */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="learning_topic" className="block text-sm font-medium text-gray-300 mb-2">
             What did you learn? *
           </label>
           <input
+            id="learning_topic"
+            name="learning_topic"
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -114,10 +116,12 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="learning_category" className="block text-sm font-medium text-gray-300 mb-2">
             Category *
           </label>
           <select
+            id="learning_category"
+            name="learning_category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
@@ -132,10 +136,12 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="learning_description" className="block text-sm font-medium text-gray-300 mb-2">
             Description
           </label>
           <textarea
+            id="learning_description"
+            name="learning_description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe what you learned, how you learned it, and what you accomplished..."
@@ -146,11 +152,13 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
 
         {/* Time Spent */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="time_spent" className="block text-sm font-medium text-gray-300 mb-2">
             Time Spent (hours) *
           </label>
           <div className="flex items-center gap-4">
             <input
+              id="time_spent"
+              name="time_spent"
               type="number"
               min="0.1"
               max="24"
@@ -228,6 +236,8 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
           {/* Add Custom Tool */}
           <div className="flex gap-2">
             <input
+              id="custom_tool"
+              name="custom_tool"
               type="text"
               value={newTool}
               onChange={(e) => setNewTool(e.target.value)}
@@ -247,10 +257,12 @@ export function LearningLogForm({ onSubmit, onCancel }: LearningLogFormProps) {
 
         {/* Evidence URL */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="evidence_url" className="block text-sm font-medium text-gray-300 mb-2">
             Evidence URL (optional)
           </label>
           <input
+            id="evidence_url"
+            name="evidence_url"
             type="url"
             value={evidenceUrl}
             onChange={(e) => setEvidenceUrl(e.target.value)}

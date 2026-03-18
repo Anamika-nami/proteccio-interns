@@ -69,6 +69,8 @@ export function CommentForm({ placeholder, onSubmit, onCancel, showTitle, initia
     <form onSubmit={handleSubmit} className="space-y-3 bg-gray-800 p-4 rounded-lg border border-gray-700">
       {showTitle && (
         <input
+          id="discussion_title"
+          name="discussion_title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -80,6 +82,8 @@ export function CommentForm({ placeholder, onSubmit, onCancel, showTitle, initia
 
       <div className="relative">
         <textarea
+          id="comment_content"
+          name="comment_content"
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}

@@ -170,20 +170,20 @@ function ProfileContent() {
             <h3 className="font-semibold text-gray-300 text-sm mb-4">Personal Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Display Name</label>
-                <input value={profileForm.display_name} onChange={e => setProfileForm(p => ({ ...p, display_name: e.target.value }))}
-                  placeholder="Your display name"
+                <label htmlFor="display_name" className="text-xs text-gray-400 mb-1 block">Display Name</label>
+                <input id="display_name" name="display_name" type="text" value={profileForm.display_name} onChange={e => setProfileForm(p => ({ ...p, display_name: e.target.value }))}
+                  placeholder="Your display name" autoComplete="name"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Phone</label>
-                <input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))}
-                  placeholder="+1 234 567 8900"
+                <label htmlFor="phone" className="text-xs text-gray-400 mb-1 block">Phone</label>
+                <input id="phone" name="phone" type="tel" value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))}
+                  placeholder="+1 234 567 8900" autoComplete="tel"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Bio</label>
-                <textarea value={profileForm.bio} onChange={e => setProfileForm(p => ({ ...p, bio: e.target.value }))}
+                <label htmlFor="bio" className="text-xs text-gray-400 mb-1 block">Bio</label>
+                <textarea id="bio" name="bio" value={profileForm.bio} onChange={e => setProfileForm(p => ({ ...p, bio: e.target.value }))}
                   placeholder="A short bio..." rows={3}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               </div>
@@ -224,15 +224,15 @@ function ProfileContent() {
             <h3 className="font-semibold text-gray-300 text-sm mb-4">Change Password</h3>
             <div className="space-y-3 max-w-sm">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">New Password</label>
-                <input type="password" value={pwForm.password} onChange={e => setPwForm(p => ({ ...p, password: e.target.value }))}
-                  placeholder="Min 8 characters"
+                <label htmlFor="new_password" className="text-xs text-gray-400 mb-1 block">New Password</label>
+                <input id="new_password" name="new_password" type="password" value={pwForm.password} onChange={e => setPwForm(p => ({ ...p, password: e.target.value }))}
+                  placeholder="Min 8 characters" autoComplete="new-password"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Confirm Password</label>
-                <input type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
-                  placeholder="Repeat password"
+                <label htmlFor="confirm_password" className="text-xs text-gray-400 mb-1 block">Confirm Password</label>
+                <input id="confirm_password" name="confirm_password" type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
+                  placeholder="Repeat password" autoComplete="new-password"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <button onClick={changePassword} disabled={saving || !pwForm.password}
@@ -419,8 +419,8 @@ function ProfileContent() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Default Landing Page</label>
-              <select value={prefForm.landing_page} onChange={e => setPrefForm(p => ({ ...p, landing_page: e.target.value }))}
+              <label htmlFor="landing_page" className="text-xs text-gray-400 mb-2 block">Default Landing Page</label>
+              <select id="landing_page" name="landing_page" value={prefForm.landing_page} onChange={e => setPrefForm(p => ({ ...p, landing_page: e.target.value }))}
                 className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="/admin/dashboard">Dashboard</option>
                 <option value="/admin/governance">Governance</option>
@@ -430,8 +430,8 @@ function ProfileContent() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Language</label>
-              <select value={prefForm.language} onChange={e => setPrefForm(p => ({ ...p, language: e.target.value }))}
+              <label htmlFor="language" className="text-xs text-gray-400 mb-2 block">Language</label>
+              <select id="language" name="language" value={prefForm.language} onChange={e => setPrefForm(p => ({ ...p, language: e.target.value }))}
                 className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
