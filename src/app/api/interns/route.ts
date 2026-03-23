@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/logger'
 import { checkFeature, getUserRole } from '@/lib/permissions'
 import { runWorkflow } from '@/modules/workflow/workflowEngine'
 import { createNotification } from '@/modules/notifications/notificationsService'
+import { cache, CacheKeys, CacheTTL, getOrFetch, invalidateRelated } from '@/lib/cache'
 
 const PUBLIC_FIELDS = 'id, full_name, cohort, skills, bio'
 const ADMIN_FIELDS = 'id, full_name, cohort, skills, bio, approval_status, is_active, user_id, created_at'
@@ -27,26 +28,39 @@ export async function GET(request: Request) {
     const role = user ? await getUserRole(user.id) : 'public'
     const fields = role === 'admin' ? ADMIN_FIELDS : PUBLIC_FIELDS
 
-    let query = supabase
-      .from('intern_profiles')
-      .select(fields, { count: 'exact' })
-      .eq('is_active', status === 'active')
-      .is('deleted_at', null)
-      .range(from, to)
-      .order('created_at', { ascending: false })
+    // Create cache key
+    const cacheKey = CacheKeys.internList(`${status}_${search}_${page}_${limit}_${role}`)
 
-    if (search) query = query.ilike('full_name', `%${search}%`)
+    // Use cache with 1 minute TTL
+    const result = await getOrFetch(
+      cacheKey,
+      async () => {
+        // OPTIMIZED: Use indexed query
+        let query = supabase
+          .from('intern_profiles')
+          .select(fields, { count: 'exact' })
+          .eq('is_active', status === 'active')
+          .is('deleted_at', null)
+          .range(from, to)
+          .order('created_at', { ascending: false })
 
-    const { data, error, count } = await query
-    if (error) throw error
+        if (search) query = query.ilike('full_name', `%${search}%`)
 
-    return NextResponse.json({
-      data: data || [],
-      total: count || 0,
-      page,
-      limit,
-      totalPages: Math.ceil((count || 0) / limit)
-    })
+        const { data, error, count } = await query
+        if (error) throw error
+
+        return {
+          data: data || [],
+          total: count || 0,
+          page,
+          limit,
+          totalPages: Math.ceil((count || 0) / limit)
+        }
+      },
+      CacheTTL.MEDIUM // 1 minute cache
+    )
+
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
@@ -91,6 +105,9 @@ export async function POST(request: Request) {
       entityId: data[0].id,
       metadata: { intern_name: result.data.full_name }
     })
+
+    // OPTIMIZED: Invalidate related caches
+    invalidateRelated('intern')
 
     return NextResponse.json(data[0], { status: 201 })
   } catch {
