@@ -3,6 +3,9 @@ export type UserRole = 'admin' | 'intern' | 'public'
 // Re-export collaboration types
 export * from './collaboration'
 
+// Re-export analytics types
+export * from './analytics'
+
 export type Intern = {
   id: string
   full_name: string

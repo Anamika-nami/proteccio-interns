@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AppProvider } from '@/context/AppContext'
 import AppShell from '@/components/layout/AppShell'
-import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
+import { PredictiveIndicators } from '@/components/analytics/PredictiveIndicators'
 
-function AnalyticsContent() {
+function PredictiveContent() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
 
@@ -41,36 +41,45 @@ function AnalyticsContent() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-24 animate-pulse" />
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl h-64 animate-pulse" />
-          ))}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="h-6 bg-gray-800 rounded w-48 animate-pulse mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-gray-800 rounded-lg h-16 animate-pulse"></div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
-  return <AnalyticsDashboard />
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-200">Predictive Analytics</h1>
+          <p className="text-gray-400 mt-1">AI-powered risk assessment and outcome prediction</p>
+        </div>
+      </div>
+      
+      <PredictiveIndicators />
+    </div>
+  )
 }
 
-export default function AnalyticsPage() {
+export default function PredictivePage() {
   return (
     <AppProvider>
       <AppShell 
         role="admin" 
-        title="Analytics" 
+        title="Predictive Analytics" 
         breadcrumbs={[
           { label: 'Admin' }, 
-          { label: 'Analytics' }
+          { label: 'Analytics', path: '/admin/analytics' },
+          { label: 'Predictive' }
         ]}
       >
-        <AnalyticsContent />
+        <PredictiveContent />
       </AppShell>
     </AppProvider>
   )
