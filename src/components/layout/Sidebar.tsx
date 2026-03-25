@@ -6,6 +6,7 @@ const adminNav = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: '⊞' },
   { label: 'Interns', path: '/admin/interns', icon: '👥' },
   { label: 'Analytics', path: '/admin/analytics', icon: '📊' },
+  { label: 'Automation', path: '/admin/automation', icon: '🤖' },
   { label: 'Profile', path: '/profile', icon: '👤' },
   { label: 'Governance', path: '/admin/governance', icon: '🛡' },
   { label: 'Workflow', path: '/admin/workflow', icon: '⚙' },
