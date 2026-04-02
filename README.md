@@ -1,649 +1,423 @@
-# Proteccio Interns
 
-A comprehensive intern management and collaboration platform built with Next.js, TypeScript, and Supabase.
+<div align="center">
 
-## Features
+# 🛡️ Proteccio Interns
 
-### Core Platform
-- **Intern Profile Management**: Complete profile lifecycle with approval workflows and status tracking
-- **Role-Based Access Control**: Granular permissions for Admin, Intern, and Public roles
-- **Data Governance**: Field-level classification (public/internal/confidential/sensitive) with visibility controls
-- **Activity Logging**: Comprehensive audit trails for all system actions
-- **Projects & Tasks**: Full project and task management with assignment tracking
-- **Workflow Automation**: Rule-based automation engine with configurable triggers
-- **Notifications System**: Real-time notifications for important events
+### Privacy-First, Intelligence-Driven Multi-Tenant SaaS Platform
 
-### Productivity & Operational Governance
-- **Attendance Tracking**: Check-in/check-out system with working hours calculation
-- **Work Logs**: Daily work log submission with admin review workflow
-- **Leave Management**: Leave request system with approval workflow
-- **Task Events**: Comprehensive task lifecycle event tracking
-- **Weekly Summaries**: Automated weekly performance summaries
-- **Analytics Dashboard**: Real-time productivity metrics and trends
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?logo=supabase)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![Zod](https://img.shields.io/badge/Zod-3.25-3068b7?logo=zod)](https://zod.dev/)
 
-### Intern Lifecycle Management
-- **Evaluation System**: 5-dimension performance evaluations (Task Quality, Consistency, Attendance, Communication, Learning) with automatic overall scoring
-- **Lifecycle States**: Structured state management (Draft → Pending → Approved → Active → Completion Review → Completed/Extended/Terminated)
-- **Certificate Generation**: Automated certificate data generation with Supabase Storage integration
-- **Feedback System**: Multi-dimensional program feedback with analytics dashboard
-- **Badge System**: Achievement badges with auto-assignment based on configurable criteria (Task Master, Consistent Performer, Early Finisher)
-- **Comprehensive Reporting**: Detailed intern reports with attendance, tasks, skills, evaluations, badges, and feedback
+Enterprise-grade SaaS application for managing organizations, interns, projects, and tasks — built with security-first principles, true multi-tenancy via Row Level Security, an event-driven intelligence layer, and strict data compliance controls.
 
-### 🚀 Day 18 Collaboration & Learning Ecosystem
-- **Task Collaboration**: Thread-based discussions on tasks with @mentions and file attachments
-- **Knowledge Hub**: Centralized learning resources with bookmarking and progress tracking
-- **Mentorship System**: Structured mentor-intern communication with conversation management
-- **Learning Progress Tracker**: Activity logging with admin verification and skill development tracking
-- **AI Task Guidance**: Intelligent task assistance with contextual recommendations
-- **Enhanced Dashboard**: Personalized insights, recommendations, and collaboration metrics
+</div>
 
-## Prerequisites
+---
 
-- Node.js 20.19.0 or higher
-- npm 10.1.0 or higher
-- Supabase account
+## 📋 Table of Contents
 
-## Getting Started
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Compliance & Data Lifecycle (Phase 7)](#-compliance--data-lifecycle-phase-7)
+- [Intelligence Layer (Phase 8)](#-intelligence-layer-phase-8)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Authentication & Security](#-authentication--security)
+- [Service Layer](#-service-layer)
+- [API Routes](#-api-routes)
+- [Design System](#-design-system)
 
-### 1. Install Dependencies
+---
+
+## 🔭 Overview
+
+Proteccio Interns is not a prototype — it's a **real-world, enterprise-ready SaaS platform** designed to demonstrate production-grade patterns:
+
+- **True multi-tenancy** via PostgreSQL Row Level Security (RLS) — no manual `WHERE organization_id = ?` anywhere in application code.
+- **Seven-layer security model** spanning authentication, authorization, validation, sanitization, rate limiting, HTTP hardening, and workflow enforcement.
+- **Compliance-Grade Data Controls** (Phase 7) — Mandatory consent gate, dynamic form builder, field-level privacy masking, and automated retention policies.
+- **Event-Driven Intelligence Layer** (Phase 8) — Dynamic workflow engine, smart notifications, secure data exports, and rule-based recommendations.
+- **Database-driven everything** — configuration, theming, permissions, feature toggles, and workflow rules are all stored in PostgreSQL and loaded at runtime.
+- **Immutable audit trail** — every mutation and workflow side-effect is logged with full user/org/entity context.
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+|---|---|
+| **Multi-Tenant Isolation** | Complete data isolation between organizations enforced at the database level via RLS |
+| **Dynamic Workflow Engine** | DB-driven event rules — trigger notifications, log events, update fields, or block actions on any system event |
+| **Smart Notifications** | Event-driven, role-targeted in-app notifications with unread tracking and a live bell dropdown |
+| **Secure Data Exports** | Privacy-masked CSV/JSON export for interns, projects, and tasks with full RBAC enforcement |
+| **Rule-Based Recommendations** | Proactive insights for interns (overdue tasks, profile gaps) and admins (pending approvals, inactive users) |
+| **Blocking Consent Gate** | Users must accept Terms of Service, Privacy Policy, and DPA before accessing the dashboard |
+| **Dynamic Form Builder** | UI forms (e.g., Intern Profile) are rendered entirely from DB schema, requiring 0 code changes to add fields |
+| **Field-Level Privacy** | Data masking (e.g., `j***e@domain.com`) based on data classification and viewer role hierarchies |
+| **Data Lifecycle Mgmt** | Soft-delete architecture with an Admin-only restoration dashboard for Interns, Projects, and Tasks |
+| **Retention Policies** | Configurable archival rules per organization to handle expired data automatically |
+| **RBAC & Matrix Editor** | Dynamic permission matrix (`module × action`) editable via the Admin dashboard |
+| **Activity Logging** | Complete audit trail of all actions — including workflow evaluations and export events |
+| **DB-Driven Theming** | Colors, branding, and UI configuration loaded from database per organization |
+| **Input Sanitization** | Global XSS/SQL injection protection and sliding-window rate limiting |
+
+---
+
+## 🛡️ Compliance & Data Lifecycle (Phase 7)
+
+Proteccio Interns is built for high-trust environments where data privacy is paramount.
+
+### 1. Blocking Consent System
+The system implements a mandatory redirect to `/dashboard/consent` for any user without active, recorded consents. This ensures 100% legal compliance for Terms of Service and Data Processing Agreements.
+
+### 2. Privacy Masking Hierarchy
+Our `PrivacyService` implements a tiered masking system:
+- **Owner View**: Full visibility of own data.
+- **Admin View**: Strategic visibility of organizational data.
+- **Intern/Mentor View**: Masked visibility (e.g., `****1234` for phones) based on configurable classification rules.
+
+### 3. Data Lifecycle & Recovery
+We follow a **Soft-Delete Only** policy for business entities.
+- **Soft-Delete**: `is_deleted = true` flags records as invisible to normal users.
+- **Data Lifecycle Dashboard**: Admins can view "Deleted" records and restore them with a single click, preventing catastrophic accidental data loss.
+
+---
+
+## ⚡ Intelligence Layer (Phase 8)
+
+Phase 8 transforms Proteccio Interns from a CRUD platform into an **event-driven, proactive SaaS system**.
+
+### 1. Dynamic Workflow Engine
+Every service-layer mutation (create, update, delete, approve, reject, login) fires a typed event. The engine queries the `workflows` table for matching rules:
+
+- **Conditions**: JSON-based rules — e.g., `{"field": "status", "operator": "equals", "value": "blocked"}`.
+- **Actions**: `send_notification`, `log_event`, `update_field`, or `block_action`.
+- **Template interpolation**: `{{title}}` placeholders in notification messages are resolved from event context.
+- **100% DB-driven**: Add, modify, or disable workflows at runtime via SQL — zero code deploys.
+
+### 2. Smart Notification System
+- In-app notification bell in the Navbar with real-time unread badge.
+- Role-based delivery — `createRoleNotification()` targets all users with a given role.
+- System event alerts — overdue tasks, pending approvals — with 24h deduplication.
+- Mark-as-read (single or bulk) via API.
+
+### 3. Secure Data Exports
+- CSV and JSON formats for interns, projects, and tasks.
+- **Privacy masking applied before export** — emails are masked, internal IDs stripped.
+- RBAC enforced — interns cannot export; only admins with module view permission.
+- Each export is recorded in the `exports` table and logged in `activity_logs`.
+
+### 4. Recommendation Engine
+- **Intern view**: Incomplete profile, overdue tasks, no recent activity, missing consent.
+- **Admin view**: Pending approvals, inactive users, org-wide overdue tasks, blocked tasks, empty projects.
+- No AI models — pure rule-based logic against existing data.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Framework** | [Next.js 15](https://nextjs.org/) | App Router, Server Components, Server Actions |
+| **Language** | [TypeScript 5.7](https://www.typescriptlang.org/) | Strict mode, full type coverage |
+| **Backend/DB** | [Supabase](https://supabase.com/) | PostgreSQL, Auth, RLS, Realtime |
+| **Validation** | [Zod 3.25](https://zod.dev/) | Runtime schema validation (frontend + backend) |
+| **Styling** | [Tailwind CSS 3.4](https://tailwindcss.com/) | Utility-first CSS with custom design system |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       Client Layer                           │
+│  Navbar (NotificationBell) │ Sidebar │ DynamicProfileForm    │
+├──────────────────────────────────────────────────────────────┤
+│                       API Routes                             │
+│  /api/notifications │ /api/exports │ /api/recommendations    │
+│  /api/interns       │ /api/users   │ /api/activity           │
+├──────────────────────────────────────────────────────────────┤
+│                     Service Layer                            │
+│  intern.service     │ project.service  │ task.service         │
+│  workflow.service   │ consent.service  │ privacy.service      │
+│  user.service       │ config.service   │ log.service          │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │
+│  Phase 8 Intelligence:                                       │
+│  workflow-engine.service  │ notification.service              │
+│  export.service           │ recommendation.service            │
+├──────────────────────────────────────────────────────────────┤
+│                     Security Guards                          │
+│  Phase6 Guards │ RBAC Checks │ Feature Toggles │ Consent     │
+├──────────────────────────────────────────────────────────────┤
+│                     Database (Supabase)                      │
+│  PostgreSQL + RLS │ 30+ Tables │ Workflow Rules │ Audit Logs │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Every service-layer mutation flows through this pipeline:
+
+1. **Validate** → Zod schema validation
+2. **Authenticate** → `getServerAuthContext()`
+3. **Authorize** → `assertModuleAndPermission()` (RBAC + feature toggle)
+4. **Execute** → DB operation via Supabase (RLS enforced)
+5. **Privacy** → Field-level masking before returning data
+6. **Log** → `logActivity()` writes to immutable audit trail
+7. **Workflow** → `evaluateWorkflows()` fires matching rules
+
+---
+
+## 🚀 Getting Started
+
+### Installation
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/Anamika-nami/proteccio-interns.git
+cd proteccio-interns
+
+# 2. Install dependencies
 npm install
+
+# 3. Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your Supabase credentials
 ```
 
-### 2. Environment Setup
+### Database Setup
 
-Create a `.env.local` file in the root directory with your Supabase credentials:
+Run the SQL scripts from `SQL_Scripts/` in order in your Supabase SQL Editor:
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://aijpazkdxaexvlpkvcpw.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+1. `01_extensions.sql` → PostgreSQL extensions (uuid-ossp, pgcrypto)
+2. `02_core_tables.sql` → organizations, users, roles, permissions
+3. `03_domain_tables.sql` → intern_profiles, projects, tasks, work_logs
+4. `04_feature_tables.sql` → All 30+ supporting tables (attendance → analytics_cache)
+5. `05_functions.sql` → All helper functions, triggers, auth sync
+6. `06_rls_enable.sql` → Enable RLS on every table
+7. `07_rls_policies.sql` → All RLS policies (multi-tenant isolation)
+8. `08_default_data.sql` → System defaults (roles, permissions, config)
+9. `09_seed_data.sql` → *(OPTIONAL)* TechCorp demo data with dynamic fields
+10. `10_verification.sql` → Health-check queries
+11. `11_intelligence.sql` → Notification/Export/Workflow RLS policies + example workflow rules
 
-### 3. Run Development Server
+### Run
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+---
 
-## Available Scripts
-
-- `npm run dev` - Start development server (http://localhost:3000)
-- `npm run build` - Build for production (validates TypeScript and generates optimized build)
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint for code quality checks
-- `npm test` - Run all tests with Vitest
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:ui` - Run tests with UI interface
-- `npm run test:coverage` - Generate test coverage report
-- `npm run test:unit` - Run unit tests only
-- `npm run test:api` - Run API tests only
-- `npm run test:integration` - Run integration tests only
-- `npm run test:e2e` - Run end-to-end tests only
-
-## Key Features Explained
-
-### Lifecycle State Management
-
-Interns progress through defined states with validation:
+## 📂 Project Structure
 
 ```
-Draft → Pending → Approved → Active → Completion Review → Completed/Extended/Terminated
+proteccio-interns/
+│
+├── app/                                # Next.js App Router
+│   ├── (public)/                       # Login, Register, Contact
+│   ├── (dashboard)/                    # Auth gates, Consent gate, Dashboard
+│   │   └── dashboard/                  # Main application routes
+│   │       ├── interns/                # Intern CRUD pages
+│   │       ├── projects/              # Project CRUD pages
+│   │       ├── tasks/                 # Task CRUD pages
+│   │       ├── activity/              # Activity log viewer (admin)
+│   │       ├── admin/                 # Config, RBAC, Data Lifecycle
+│   │       ├── consent/               # Consent gate page
+│   │       └── profile/               # User profile + dynamic fields
+│   └── api/                            # API Routes
+│       ├── interns/                    # Intern search/filter
+│       ├── users/                     # User management
+│       ├── activity/                  # Activity logs
+│       ├── notifications/             # [Phase 8] Notification CRUD
+│       ├── exports/                   # [Phase 8] Secure data export
+│       └── recommendations/           # [Phase 8] Smart recommendations
+│
+├── components/
+│   ├── dashboard/
+│   │   ├── DynamicProfileForm.tsx     # DB-driven form renderer
+│   │   ├── Navbar.tsx                 # Top bar with NotificationBell
+│   │   ├── NotificationBell.tsx       # [Phase 8] Bell dropdown + unread badge
+│   │   └── Sidebar.tsx               # Navigation sidebar
+│   └── ui/                            # Shared UI components
+│
+├── contexts/                           # React Context providers
+│   ├── UserContext.tsx                # Authenticated user state
+│   ├── OrganizationContext.tsx        # Org data
+│   └── AppConfigContext.tsx           # DB-driven config + feature toggles
+│
+├── lib/
+│   ├── auth/                          # requireAuth middleware
+│   ├── errors/                        # AppError hierarchy + sanitizeError
+│   ├── security/                      # Sanitizer, Rate Limiter
+│   ├── phase6/                        # Guards, RBAC helpers, auth context
+│   ├── supabase/                      # Clients (SSR + browser)
+│   ├── utils/                         # Shared utilities
+│   └── validations/                   # Zod schemas
+│
+├── services/                           # Core Business Logic (19 services)
+│   ├── user.service.ts                # User profiles, permissions
+│   ├── organization.service.ts        # Org data, departments, roles
+│   ├── intern.service.v2.ts           # Intern CRUD + search + pagination
+│   ├── project.service.v2.ts          # Project CRUD + search + pagination
+│   ├── task.service.v2.ts             # Task CRUD + search + pagination
+│   ├── workflow.service.ts            # Role-based workflow enforcement (approve/reject)
+│   ├── log.service.ts                 # Immutable activity logging
+│   ├── privacy.service.ts             # Field-level data masking
+│   ├── consent.service.ts             # Legal consent enforcement
+│   ├── dynamic-form.service.ts        # DB schema → form fields
+│   ├── config.service.ts              # DB-driven configuration
+│   ├── feature-toggle.service.ts      # Module on/off switches
+│   ├── permission.service.ts          # RBAC permission checks
+│   ├── retention.service.ts           # Data retention policies
+│   ├── workflow-engine.service.ts     # [Phase 8] Dynamic rule engine
+│   ├── notification.service.ts        # [Phase 8] Smart notifications
+│   ├── export.service.ts              # [Phase 8] Secure data export
+│   └── recommendation.service.ts      # [Phase 8] Rule-based insights
+│
+├── types/                              # TypeScript types
+│   ├── auth.ts
+│   └── database.ts
+│
+└── SQL_Scripts/                        # 11 SQL scripts (10 foundation + 1 Phase 8)
 ```
-
-**State Transitions:**
-- `draft` → `pending` (Submit for approval)
-- `pending` → `approved` or `inactive` (Admin review)
-- `approved` → `active` or `inactive` (Activation)
-- `active` → `inactive`, `archived`, or `COMPLETION_REVIEW` (Status changes)
-- `inactive` → `active`, `archived`, or `pending` (Reactivation)
-- `COMPLETION_REVIEW` → `COMPLETED`, `EXTENDED`, or `TERMINATED` (Final decision)
-
-### Evaluation System
-
-5-dimension scoring (1-5 scale):
-1. **Task Quality** - Quality of work delivered
-2. **Consistency** - Reliability and consistency
-3. **Attendance** - Attendance record
-4. **Communication** - Communication skills
-5. **Learning Progress** - Learning and growth
-
-Overall score is automatically calculated as the average of all dimensions.
-
-### Badge System
-
-Auto-assigned badges based on criteria:
-- **Task Master** - Complete 20+ tasks
-- **Consistent Performer** - Maintain 90%+ attendance
-- **Early Finisher** - Complete internship successfully
-
-### Security Features
-
-- **Security Headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- **Role-Based Access Control**: Granular permissions per resource and action
-- **Data Classification**: Field-level classification (public/internal/confidential/sensitive)
-- **Activity Logging**: Comprehensive audit trails with categorization
-- **Input Validation**: Zod schemas for all API inputs
-- **Authentication**: Supabase Auth with SSR support
-
-### Performance Optimizations
-
-- **Image Optimization**: AVIF and WebP formats with 1-hour cache TTL
-- **Static Asset Caching**: 1-year cache for static resources
-- **Package Import Optimization**: Optimized imports for react-hot-toast
-- **Compression**: Gzip/Brotli compression enabled
-- **Pagination**: All list views support pagination
-- **Turbopack**: Fast development builds with Next.js Turbopack
-
-## Tech Stack
-
-- **Framework**: Next.js 16.1.6 (App Router with Turbopack)
-- **Language**: TypeScript 5
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth with SSR support
-- **Styling**: Tailwind CSS 4
-- **Testing**: Vitest + React Testing Library
-- **Validation**: Zod 4.3.6
-- **Notifications**: React Hot Toast
-- **Deployment**: Vercel-ready
-
-## Project Structure
-
-```
-├── src/
-│   ├── app/                    # Next.js app router pages
-│   │   ├── admin/              # Admin dashboard and management
-│   │   │   ├── analytics/      # Productivity analytics
-│   │   │   ├── completion-reviews/  # Intern completion workflow
-│   │   │   ├── consent-logs/   # GDPR consent tracking
-│   │   │   ├── dashboard/      # Main admin dashboard
-│   │   │   ├── evaluations/    # Performance evaluations
-│   │   │   ├── feedback-analytics/  # Feedback insights
-│   │   │   ├── interns/        # Intern management
-│   │   │   ├── leave/          # Leave request management
-│   │   │   ├── reports/        # Comprehensive reporting
-│   │   │   ├── worklogs/       # Work log review
-│   │   │   └── ...             # Other admin features
-│   │   ├── intern/             # Intern portal
-│   │   │   ├── attendance/     # Check-in/check-out
-│   │   │   ├── feedback/       # Program feedback
-│   │   │   ├── leave/          # Leave requests
-│   │   │   └── worklogs/       # Daily work logs
-│   │   ├── api/                # API routes
-│   │   │   ├── auth/           # Authentication
-│   │   │   ├── attendance/     # Attendance management
-│   │   │   ├── evaluations/    # Evaluation endpoints
-│   │   │   ├── feedback/       # Feedback collection
-│   │   │   ├── badges/         # Badge management
-│   │   │   ├── certificates/   # Certificate generation
-│   │   │   ├── completion/     # Lifecycle management
-│   │   │   ├── worklogs/       # Work log operations
-│   │   │   ├── collaboration/  # Day 18: Thread and comment APIs
-│   │   │   ├── knowledge/      # Day 18: Knowledge hub APIs
-│   │   │   ├── mentorship/     # Day 18: Mentorship system APIs
-│   │   │   ├── learning/       # Day 18: Learning tracker APIs
-│   │   │   ├── dashboard/      # Day 18: Enhanced dashboard APIs
-│   │   │   └── ...             # Other API endpoints
-│   │   ├── favicon.ico         # App favicon (App Router convention)
-│   │   └── manifest.ts         # PWA manifest generator
-│   ├── components/             # Reusable React components
-│   │   ├── evaluations/        # Evaluation forms and history
-│   │   ├── certificates/       # Certificate templates
-│   │   ├── profile/            # Badge displays
-│   │   ├── layout/             # Layout components (AppShell, Sidebar, etc.)
-│   │   ├── collaboration/      # Day 18: Task collaboration components
-│   │   ├── knowledge/          # Day 18: Knowledge hub components
-│   │   ├── mentorship/         # Day 18: Mentorship system components
-│   │   ├── learning/           # Day 18: Learning tracker components
-│   │   ├── dashboard/          # Day 18: Enhanced dashboard components
-│   │   ├── tasks/              # Day 18: AI task guidance components
-│   │   └── ui/                 # UI primitives
-│   ├── lib/                    # Utility functions and core logic
-│   │   ├── supabase/           # Supabase client configuration
-│   │   ├── internWorkflow.ts  # Lifecycle state management
-│   │   ├── logger.ts           # Activity logging
-│   │   ├── permissions.ts     # RBAC utilities
-│   │   ├── policyEngine.ts    # Policy evaluation
-│   │   └── validations.ts     # Zod schemas
-│   ├── services/               # Service layer for data operations
-│   │   ├── badgeService.ts    # Badge logic
-│   │   ├── certificateService.ts  # Certificate generation
-│   │   ├── completionService.ts   # Lifecycle management
-│   │   ├── evaluationService.ts   # Evaluation logic
-│   │   ├── feedbackService.ts     # Feedback collection
-│   │   ├── reportService.ts       # Report generation
-│   │   └── aiSuggestionService.ts # Day 18: AI task guidance
-│   ├── modules/                # Feature modules
-│   │   ├── notifications/      # Notification service
-│   │   └── workflow/           # Workflow engine
-│   ├── types/                  # TypeScript type definitions
-│   │   ├── index.ts            # Centralized type exports
-│   │   └── collaboration.ts    # Day 18: Collaboration feature types
-│   ├── context/                # React context providers
-│   │   ├── AppContext.tsx      # Global app state
-│   │   └── ConfigContext.tsx   # Configuration management
-│   ├── hooks/                  # Custom React hooks
-│   │   └── useAuth.ts          # Authentication hook
-│   └── __tests__/              # Test suites
-│       ├── api/                # API route tests
-│       ├── components/         # Component tests
-│       ├── services/           # Service layer tests
-│       └── integration/        # Integration tests
-└── .env.local                  # Environment variables (not in git)
-```
-
-## Database Setup
-
-The database includes all core tables plus the new Day 18 collaboration features. Run this SQL migration to set up the collaboration ecosystem:
-
-### Day 18 Collaboration Tables Migration
-
-```sql
--- Day 18 Collaboration Features Database Migration
-BEGIN;
-
--- Collaboration System Tables
-CREATE TABLE collaboration_threads (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'archived')),
-    created_by UUID NOT NULL REFERENCES users(id),
-    resolved_by UUID REFERENCES users(id),
-    resolved_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE collaboration_comments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    thread_id UUID NOT NULL REFERENCES collaboration_threads(id) ON DELETE CASCADE,
-    parent_comment_id UUID REFERENCES collaboration_comments(id),
-    content TEXT NOT NULL,
-    author_id UUID NOT NULL REFERENCES users(id),
-    mentions UUID[] DEFAULT '{}',
-    attachments JSONB DEFAULT '[]',
-    is_edited BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Knowledge Hub Tables
-CREATE TABLE knowledge_resources (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    content_type VARCHAR(50) NOT NULL CHECK (content_type IN ('document', 'video', 'link', 'tutorial', 'reference')),
-    file_url TEXT,
-    external_url TEXT,
-    category VARCHAR(100) NOT NULL,
-    tags TEXT[] DEFAULT '{}',
-    difficulty_level VARCHAR(20) DEFAULT 'beginner' CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
-    estimated_duration_minutes INTEGER,
-    is_featured BOOLEAN DEFAULT FALSE,
-    created_by UUID NOT NULL REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE knowledge_bookmarks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    resource_id UUID NOT NULL REFERENCES knowledge_resources(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, resource_id)
-);
-
-CREATE TABLE knowledge_progress (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    resource_id UUID NOT NULL REFERENCES knowledge_resources(id) ON DELETE CASCADE,
-    status VARCHAR(20) DEFAULT 'started' CHECK (status IN ('started', 'completed')),
-    progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
-    time_spent_minutes INTEGER DEFAULT 0,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, resource_id)
-);
-
--- Mentorship System Tables
-CREATE TABLE mentorship_conversations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    intern_id UUID NOT NULL REFERENCES intern_profiles(id),
-    mentor_id UUID NOT NULL REFERENCES users(id),
-    subject VARCHAR(255) NOT NULL,
-    category VARCHAR(50) NOT NULL CHECK (category IN ('technical', 'career', 'task_help', 'general')),
-    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'archived')),
-    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    resolved_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE mentorship_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    conversation_id UUID NOT NULL REFERENCES mentorship_conversations(id) ON DELETE CASCADE,
-    sender_id UUID NOT NULL REFERENCES users(id),
-    content TEXT NOT NULL,
-    attachments JSONB DEFAULT '[]',
-    is_edited BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Learning Tracker Tables
-CREATE TABLE learning_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    intern_id UUID NOT NULL REFERENCES intern_profiles(id),
-    topic VARCHAR(255) NOT NULL,
-    description TEXT,
-    category VARCHAR(100) NOT NULL,
-    tools_used TEXT[] DEFAULT '{}',
-    time_spent_hours DECIMAL(4,2) NOT NULL,
-    evidence_url TEXT,
-    verification_status VARCHAR(20) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
-    verified_by UUID REFERENCES users(id),
-    verified_at TIMESTAMP WITH TIME ZONE,
-    verification_notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Dashboard Intelligence Tables
-CREATE TABLE dashboard_insights (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    insight_type VARCHAR(50) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    data JSONB NOT NULL,
-    priority INTEGER DEFAULT 1,
-    is_dismissed BOOLEAN DEFAULT FALSE,
-    expires_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create Indexes for Performance
-CREATE INDEX idx_collaboration_threads_task_id ON collaboration_threads(task_id);
-CREATE INDEX idx_collaboration_threads_status ON collaboration_threads(status);
-CREATE INDEX idx_collaboration_comments_thread_id ON collaboration_comments(thread_id);
-CREATE INDEX idx_collaboration_comments_author_id ON collaboration_comments(author_id);
-CREATE INDEX idx_collaboration_comments_mentions ON collaboration_comments USING GIN(mentions);
-
-CREATE INDEX idx_knowledge_resources_category ON knowledge_resources(category);
-CREATE INDEX idx_knowledge_resources_tags ON knowledge_resources USING GIN(tags);
-CREATE INDEX idx_knowledge_resources_difficulty ON knowledge_resources(difficulty_level);
-
-CREATE INDEX idx_mentorship_conversations_intern_id ON mentorship_conversations(intern_id);
-CREATE INDEX idx_mentorship_conversations_mentor_id ON mentorship_conversations(mentor_id);
-CREATE INDEX idx_mentorship_conversations_status ON mentorship_conversations(status);
-
-CREATE INDEX idx_learning_logs_intern_id ON learning_logs(intern_id);
-CREATE INDEX idx_learning_logs_verification_status ON learning_logs(verification_status);
-CREATE INDEX idx_learning_logs_category ON learning_logs(category);
-
-CREATE INDEX idx_dashboard_insights_user_id ON dashboard_insights(user_id);
-CREATE INDEX idx_dashboard_insights_type ON dashboard_insights(insight_type);
-
--- Add RLS Policies for Security
-ALTER TABLE collaboration_threads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE collaboration_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge_resources ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge_bookmarks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge_progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE mentorship_conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE mentorship_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE learning_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE dashboard_insights ENABLE ROW LEVEL SECURITY;
-
-COMMIT;
-```
-
-### Core Database Tables
-- `users` - User accounts with role assignments (admin/intern/public)
-- `intern_profiles` - Intern information with lifecycle status tracking
-- `projects` - Project data with tech stack and URLs
-- `tasks` - Task management with assignment and status tracking
-- `app_config` - Application configuration (key-value pairs)
-- `activity_logs` - Comprehensive audit trail with categorization
-- `notifications` - User notifications with read status
-- `role_permissions` - RBAC permission matrix
-- `workflow_rules` - Automation rule definitions
-- `policies` - Data access policy engine
-- `form_fields` - Dynamic form field configuration with visibility controls
-- `consent_logs` - GDPR consent tracking
-
-### Productivity & Governance Tables
-- `attendance` - Check-in/check-out records with working hours
-- `work_logs` - Daily work logs with review workflow
-- `task_events` - Task lifecycle event tracking
-- `leave_requests` - Leave request management with approval workflow
-- `weekly_summary` - Automated weekly performance summaries
-
-### Lifecycle Management Tables
-- `intern_evaluations` - Performance evaluations with 5-dimension scoring
-- `intern_feedback` - Program feedback from interns (4 rating categories)
-- `badges` - Badge definitions with criteria
-- `intern_badges` - Earned badges by interns
-- `intern_lifecycle_summary` - Aggregated metrics view for reporting
-- `intern_audit_log` - Intern-specific audit trail
-- `intern_tasks` - Intern-specific task assignments
-- `intern_documents` - Document management with verification
-- `intern_skills` - Skill tracking with proficiency levels
-
-### Day 18 Collaboration Tables
-- `collaboration_threads` - Task-level discussion threads with status tracking
-- `collaboration_comments` - Threaded comments with mentions and attachments
-- `knowledge_resources` - Learning resources with categorization and difficulty levels
-- `knowledge_bookmarks` - User bookmarks for resources
-- `knowledge_progress` - Learning progress tracking with completion status
-- `mentorship_conversations` - Mentor-intern communication threads
-- `mentorship_messages` - Messages within mentorship conversations
-- `learning_logs` - Learning activity logs with verification workflow
-- `dashboard_insights` - Personalized insights and recommendations
-
-### Storage Buckets
-- `certificates` - Certificate files (private bucket with signed URLs)
-
-### Key Database Fields
-
-**intern_profiles table:**
-- `status` - Lifecycle state (ACTIVE, COMPLETION_REVIEW, COMPLETED, EXTENDED, TERMINATED)
-- `approval_status` - Approval state (pending, active, rejected)
-- `is_active` - Boolean flag for active status
-- `lifecycle_status` - Legacy field (deprecated, use `status` instead)
-
-**app_config table:**
-- `key` - Configuration key
-- `value` - Configuration value
-- `type` - Value type (string, boolean, color, json)
-- `label` - Human-readable label
-
-## Deployment
-
-### Vercel Deployment (Recommended)
-
-The easiest way to deploy is using [Vercel](https://vercel.com):
-
-1. Push your code to GitHub
-2. Import the repository in Vercel
-3. Add environment variables in Vercel dashboard:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy
-
-Vercel will automatically:
-- Detect Next.js configuration
-- Run build process
-- Set up preview deployments for PRs
-- Enable automatic deployments on push
-
-### Manual Deployment
-
-For other platforms:
-
-```bash
-# Build the application
-npm run build
-
-# Start production server
-npm start
-```
-
-Ensure environment variables are set in your hosting platform.
-
-### Build Verification
-
-Before deploying, verify the build:
-
-```bash
-npm run build
-```
-
-Expected output:
-```
-✓ Compiled successfully
-✓ Finished TypeScript
-✓ Collecting page data
-✓ Generating static pages (68/68)
-✓ Finalizing page optimization
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Build Errors:**
-- Ensure all environment variables are set
-- Check TypeScript errors: `npm run build`
-- Verify Node.js version (20.19.0+)
-
-**Database Connection:**
-- Verify Supabase URL and anon key
-- Check Supabase project status
-- Ensure RLS policies are configured
-
-**Authentication Issues:**
-- Clear browser cookies and local storage
-- Verify Supabase Auth is enabled
-- Check user role assignments in database
-
-**"Forbidden" Error on Admin Actions:**
-
-This occurs when your authenticated user doesn't have an `admin` role in the `users` table.
-
-**Quick Fix:**
-1. Go to Supabase SQL Editor
-2. Get your auth user ID:
-   ```sql
-   SELECT id, email FROM auth.users WHERE email = 'your-email@example.com';
-   ```
-3. Insert/update user with admin role:
-   ```sql
-   INSERT INTO users (id, email, role, created_at)
-   VALUES ('your-user-id-from-above', 'your-email@example.com', 'admin', NOW())
-   ON CONFLICT (id) DO UPDATE SET role = 'admin';
-   ```
-
-**Automatic User Creation (Recommended):**
-
-Create a database trigger to automatically create user records on signup:
-
-```sql
--- Create function to handle new user
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (id, email, role, created_at)
-  VALUES (NEW.id, NEW.email, 'intern', NOW());
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create trigger
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
-
-Then manually promote your user to admin:
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
-```
-
-**Verify Admin Setup:**
-```sql
--- Check if user exists with correct role
-SELECT id, email, role FROM users WHERE email = 'your-email@example.com';
-
--- Ensure IDs match between auth.users and users tables
-SELECT 
-  au.id as auth_id, 
-  au.email, 
-  u.id as user_id, 
-  u.role 
-FROM auth.users au 
-LEFT JOIN users u ON au.id = u.id 
-WHERE au.email = 'your-email@example.com';
-```
-
-**Performance Issues:**
-- Enable caching headers
-- Optimize images
-- Check database query performance
-- Monitor Supabase usage limits
-
-## Contributing
-
-This is a private project. For internal development:
-
-1. Create a feature branch
-2. Make changes with proper TypeScript types
-3. Write tests for new features
-4. Run `npm run build` to verify
-5. Submit PR for review
-
-## Code Quality Standards
-
-- **TypeScript**: Strict mode enabled, no `any` types
-- **Error Handling**: All async operations wrapped in try-catch
-- **Validation**: Zod schemas for all API inputs
-- **Testing**: Unit tests for services, integration tests for APIs
-- **Security**: Input sanitization, RBAC checks, audit logging
-- **Performance**: Pagination, efficient queries, caching
-
-## Recent Updates
-
-### Day 18 Collaboration & Learning Ecosystem (Latest)
-- ✅ **Task Collaboration System**: Thread-based discussions with @mentions and attachments
-- ✅ **Knowledge Hub**: Centralized learning resources with progress tracking
-- ✅ **Mentorship Platform**: Structured mentor-intern communication system
-- ✅ **Learning Progress Tracker**: Activity logging with admin verification
-- ✅ **AI Task Guidance**: Intelligent task assistance and recommendations
-- ✅ **Enhanced Dashboard**: Personalized insights and collaboration metrics
-- ✅ **Complete API Suite**: 13 new endpoints for collaboration features
-- ✅ **React Components**: 23 new components for collaboration UI
-- ✅ **Database Schema**: 8 new tables with proper indexing and RLS policies
-- ✅ **TypeScript Integration**: Full type safety with collaboration types
-- ✅ **Production Ready**: All features tested and deployment-ready
-
-### Previous Updates
-- ✅ Fixed database column naming inconsistency in `app_config` table (config_key/config_value → key/value)
-- ✅ Fixed intern status field inconsistency (lifecycle_status → status)
-- ✅ Verified all 68+ routes compile successfully
-- ✅ Confirmed zero TypeScript errors
-- ✅ Production-ready build validated
-
-## License
-
-This project is private and proprietary.
 
 ---
 
-**Built with ❤️ using Next.js, TypeScript, and Supabase**
+## 🔒 Security Architecture
 
-For questions or support, contact the development team.
+Proteccio Interns implements **multi-layered defense**:
+
+1. **Authentication**: Cookie-based JWT sessions with Supabase Auth.
+2. **Middleware**: Validates user status (`active`/`draft`), role, and **Consent status**.
+3. **Database RLS**: Inescapable isolation enforced at the Postgres level for every table.
+4. **Service Validation**: Every service call validates input via Zod and checks RBAC permissions.
+5. **PII Masking**: Sensitive fields are automatically masked at the service level before reaching the UI or any export.
+6. **Audit Trail**: Immutable `activity_logs` capture every create, update, delete, workflow evaluation, and export event.
+7. **Workflow Enforcement**: DB-driven rules can block operations, flag anomalies, or trigger alerts on any event.
+
+---
+
+## ⚙️ Service Layer
+
+All 19 services follow the same validated pipeline: **Input → Auth → RBAC → DB → Privacy → Log → Workflow**.
+
+### Core Services
+
+| Service | File | Key Functions |
+|---|---|---|
+| **User** | `user.service.ts` | `getCurrentUserProfile()`, `updateCurrentUserProfile()`, `hasPermission()`, `isAdmin()` |
+| **Organization** | `organization.service.ts` | `getCurrentOrganization()`, `getOrganizationStats()`, `getDepartments()`, `getRoles()` |
+| **Intern** | `intern.service.v2.ts` | `getInternsPaginated()`, `getInternById()`, `createIntern()`, `updateIntern()`, `deleteIntern()`, `restoreIntern()`, `getInternStats()` |
+| **Project** | `project.service.v2.ts` | `getProjectsPaginated()`, `getProjectById()`, `createProject()`, `updateProject()`, `deleteProject()`, `restoreProject()`, `getProjectStats()` |
+| **Task** | `task.service.v2.ts` | `getTasksPaginated()`, `getTaskById()`, `createTask()`, `updateTask()`, `deleteTask()`, `restoreTask()`, `getTaskStats()`, `getTasksByUser()` |
+| **Workflow** | `workflow.service.ts` | `approveIntern()`, `rejectIntern()`, `updateInternStatus()`, `isSuperAdmin()`, `isOrgAdmin()`, `canManageTasks()` |
+
+### Compliance Services
+
+| Service | File | Key Functions |
+|---|---|---|
+| **Consent** | `consent.service.ts` | `hasUserConsented()`, `recordConsent()`, `withdrawConsent()`, `requireConsent()` |
+| **Privacy** | `privacy.service.ts` | `applyFieldLevelPrivacy()`, `applyPrivacyToInternList()`, `maskEmail()`, `maskPhone()` |
+| **Retention** | `retention.service.ts` | Automated data archival policy enforcement |
+| **Dynamic Forms** | `dynamic-form.service.ts` | DB-schema-driven form field loading |
+
+### Phase 8 Intelligence Services
+
+| Service | File | Key Functions |
+|---|---|---|
+| **Workflow Engine** | `workflow-engine.service.ts` | `evaluateWorkflows()`, `matchConditions()`, `wouldBlock()`, `getWorkflows()` |
+| **Notifications** | `notification.service.ts` | `createNotification()`, `createRoleNotification()`, `getUserNotifications()`, `markAsRead()`, `markAllAsRead()`, `notifyOverdueTasks()`, `notifyPendingApprovals()` |
+| **Export** | `export.service.ts` | `exportData()`, `generateCSV()`, `generateJSON()` |
+| **Recommendations** | `recommendation.service.ts` | `getUserRecommendations()`, `getAdminInsights()` |
+
+### Infrastructure Services
+
+| Service | File | Key Functions |
+|---|---|---|
+| **Config** | `config.service.ts` | DB-driven configuration loading |
+| **Feature Toggles** | `feature-toggle.service.ts` | `isModuleEnabled()` |
+| **Permissions** | `permission.service.ts` | `hasPermission()` matrix checks |
+| **Activity Log** | `log.service.ts` | `logActivity()`, `getActivityLogs()`, `getRecentActivity()` |
+
+### Usage Examples
+
+**Server Components (recommended):**
+```typescript
+import { getInternsPaginated } from '@/services/intern.service.v2';
+
+export default async function InternsPage() {
+  const result = await getInternsPaginated({ page: 1, limit: 10 });
+  return (
+    <div>
+      {result.data.map(intern => (
+        <div key={intern.id}>{intern.user?.email}</div>
+      ))}
+      <p>Total: {result.pagination.total}</p>
+    </div>
+  );
+}
+```
+
+**Client-Side via API routes:**
+```typescript
+// Fetch notifications
+const res = await fetch('/api/notifications');
+const { notifications, stats } = await res.json();
+
+// Export tasks as CSV
+const csvRes = await fetch('/api/exports', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ entityType: 'tasks', format: 'csv' }),
+});
+const csvText = await csvRes.text();
+```
+
+### Service Layer Rules
+
+| ✅ DO | ❌ DON'T |
+|---|---|
+| Use service functions in server components | Bypass RLS with the service-role key |
+| Let RLS handle organization filtering | Filter data manually by `organization_id` |
+| Trust the service layer for all data access | Make direct Supabase calls from components |
+| Use proper TypeScript types | Hardcode user IDs or organization IDs |
+| Let the workflow engine handle side-effects | Create parallel logic outside the service layer |
+
+---
+
+## 🌐 API Routes
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `/api/interns` | `GET` | Intern search and filter |
+| `/api/users` | `GET` | User management |
+| `/api/activity` | `GET` | Activity log viewer |
+| `/api/app-shell` | `GET` | App config + feature toggles |
+| `/api/profile-fields` | `GET`, `POST` | Dynamic form field management |
+| `/api/data-lifecycle` | `GET`, `POST` | Soft-delete restoration |
+| `/api/notifications` | `GET`, `POST` | Fetch notifications, mark as read |
+| `/api/exports` | `POST` | Trigger privacy-masked data export (CSV/JSON) |
+| `/api/recommendations` | `GET` | User recommendations + admin insights |
+
+---
+
+## 🎨 Design System
+
+Proteccio Interns uses a dark-mode-first design system with Tailwind CSS:
+
+- **Primary palette**: Amber/Gold accent with Slate dark backgrounds
+- **Component patterns**: Gradient cards, glassmorphic overlays, micro-animations
+- **Role badges**: Color-coded per role (`super_admin` = red, `org_admin` = purple, `mentor` = blue, `intern` = green)
+- **Notification bell**: Live unread badge with animated pulse, type-colored borders
+
+---
+
+## 📜 License
+
+This project is private and proprietary. Built with 🛡️ security-first principles.
+
+**Proteccio Interns** — Protecting your organization's data by design.
